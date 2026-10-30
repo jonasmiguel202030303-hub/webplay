@@ -41,14 +41,14 @@ export default function Banner({ featured = [] }) {
           src={bg}
           alt=""
           referrerPolicy="no-referrer"
-          className={`absolute inset-0 -z-10 h-full w-full animate-fade-in object-cover ${image ? '' : 'scale-110 blur-2xl'}`}
+          className={`absolute inset-0 -z-10 h-full w-full animate-fade-in object-cover ${image ? '' : 'object-top md:scale-110 md:object-center md:blur-2xl'}`}
           onError={(e) => { e.currentTarget.style.display = 'none'; }}
         />
       )}
-      <div className={`absolute inset-0 -z-10 ${bg ? 'bg-gradient-to-r from-bg via-bg/75 to-bg/10' : 'bg-gradient-to-br from-primary/40 via-secondary/20 to-bg'}`} aria-hidden />
+      <div className={`absolute inset-0 -z-10 ${bg ? 'bg-gradient-to-t from-bg via-bg/70 to-bg/10 md:bg-gradient-to-r md:from-bg md:via-bg/75 md:to-bg/10' : 'bg-gradient-to-br from-primary/40 via-secondary/20 to-bg'}`} aria-hidden />
       <div className="absolute inset-x-0 top-0 -z-10 h-32 bg-gradient-to-b from-black/60 to-transparent" aria-hidden />
       <div className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-bg to-transparent" aria-hidden />
-      <div className="mx-auto flex min-h-[320px] max-w-7xl items-end gap-8 px-4 py-8 sm:min-h-[460px] sm:px-6 lg:min-h-[560px]">
+      <div className="mx-auto flex min-h-[420px] max-w-7xl items-end gap-8 px-4 py-8 sm:min-h-[460px] sm:px-6 lg:min-h-[560px]">
         <div className="min-w-0 flex-1 space-y-3">
           {current ? (
             <>
