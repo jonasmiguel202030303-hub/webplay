@@ -8,6 +8,7 @@ import { audit } from './auditService.js';
 import { relayEnabled, relayPath } from './relayService.js';
 import { getTenantSettingsRow } from './tenantService.js';
 import { currentLine } from './lineContext.js';
+import { getTitleExtras } from './tmdbService.js';
 
 const VALIDATION_CODES = new Set(['INVALID_URL', 'INSECURE_PROTOCOL', 'BLOCKED_ADDRESS', 'BLOCKED_PORT', 'HOST_NOT_ALLOWED']);
 const OFFLINE_CODES = new Set(['TIMEOUT', 'UNREACHABLE', 'TLS_ERROR', 'SERVER_ERROR', 'TOO_MANY_REDIRECTS']);
@@ -341,13 +342,23 @@ async function cachedSmall(key, ttlMs, loader) {
   return data;
 }
 
-/** Detalhes (sinopse, elenco, temporadas...) de filme ou série, com cache curto. */
+/** Detalhes (sinopse, elenco, temporadas...) de filme ou série, com cache curto. Elenco com foto e imagem dos episódios vêm da TMDB quando a fonte não traz. */
 export async function getDetails(tenantId, serverId, type, id) {
   const row = await loadServer(tenantId, serverId);
   try {
     return await cachedSmall(`${serverId}:${lineKey()}:details:${type}:${id}`, 10 * 60 * 1000, async () => {
       const adapter = adapterFor(row);
-      return type === 'series' ? adapter.getSeriesInfo(id) : adapter.getVodInfo(id);
+      const details = type === 'series' ? await adapter.getSeriesInfo(id) : await adapter.getVodInfo(id);
+      const stream = await getStream(tenantId, serverId, type, id).catch(() => null);
+      const extras = stream ? await getTitleExtras({ type, name: stream.name, year: stream.year, seasons: (details.seasons ?? []).map((s) => s.season) }) : { cast: [], episodeImages: {} };
+      return {
+        ...details,
+        castList: extras.cast,
+        seasons: details.seasons?.map((s) => ({
+          ...s,
+          episodes: s.episodes.map((e) => ({ ...e, image: e.image || extras.episodeImages[`${s.season}:${e.number}`] || null })),
+        })),
+      };
     });
   } catch (err) {
     throw toAppError(err);
