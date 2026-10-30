@@ -58,7 +58,7 @@ export async function authenticateViewer(req, _res, next) {
     const payload = verifyToken(req.cookies?.[VIEWER_COOKIE], 'viewer');
     if (!payload || Number(payload.tid) !== req.tenant.id) throw unauthorized('Entre para continuar.', 'VIEWER_UNAUTHORIZED');
     const viewer = await queryOne(
-      'SELECT id, tenant_id, name, email, status, token_version, server_id, xtream_username, xtream_password_enc, account_info, account_checked_at FROM viewer_accounts WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL',
+      'SELECT id, tenant_id, name, email, status, token_version, adult_control_enabled, server_id, xtream_username, xtream_password_enc, account_info, account_checked_at FROM viewer_accounts WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL',
       [payload.sub, req.tenant.id],
     );
     if (!viewer || viewer.status !== 'active' || viewer.token_version !== payload.tv) throw unauthorized('Sessão expirada. Entre novamente.', 'VIEWER_UNAUTHORIZED');
@@ -70,7 +70,7 @@ export async function authenticateViewer(req, _res, next) {
     if (Date.now() - new Date(session.last_seen_at).getTime() > 10 * 60_000) {
       await query('UPDATE viewer_sessions SET last_seen_at = UTC_TIMESTAMP(3) WHERE id = ?', [session.id]);
     }
-    req.viewer = { id: viewer.id, name: viewer.name, email: viewer.email, jti: payload.jti, line: lineFromRow(viewer) };
+    req.viewer = { id: viewer.id, name: viewer.name, email: viewer.email, adult_control_enabled: viewer.adult_control_enabled, jti: payload.jti, line: lineFromRow(viewer) };
     next();
   } catch (err) {
     next(err);

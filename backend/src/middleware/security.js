@@ -41,7 +41,7 @@ export function corsMiddleware() {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'X-Requested-With', 'X-Profile-Id'],
+    allowedHeaders: ['Content-Type', 'X-Requested-With', 'X-Profile-Id', 'X-Adult-Unlock'],
     maxAge: 600,
   });
 }

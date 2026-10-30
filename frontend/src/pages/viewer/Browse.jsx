@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, SearchX } from 'lucide-react';
+import { Lock, Search, SearchX } from 'lucide-react';
 import CatalogError from '../../components/viewer/CatalogError.jsx';
 import ContentGrid from '../../components/viewer/ContentGrid.jsx';
+import AdultPinModal from '../../components/viewer/AdultPinModal.jsx';
 import { toContent } from '../../components/viewer/content.js';
 import { EmptyState, Spinner } from '../../components/ui/Feedback.jsx';
 import { Pagination } from '../../components/ui/Badge.jsx';
@@ -20,7 +21,7 @@ const LABELS = {
 
 /** Navegação do catálogo por categoria, com busca local e paginação. type: 'live' | 'vod'. */
 export default function Browse({ type }) {
-  const { tenant, profile, svc } = useViewer();
+  const { tenant, profile, viewer, svc } = useViewer();
   const label = LABELS[type];
   useTitle(`${label.title} — ${tenant.brand.displayName}`);
   const [params, setParams] = useSearchParams();
@@ -28,6 +29,10 @@ export default function Browse({ type }) {
   const page = Math.max(1, Number(params.get('pagina')) || 1);
   const [q, setQ] = useState(params.get('q') ?? '');
   const dq = useDebounced(q);
+  // Controle parental: categoria adulta desbloqueada fica válida só enquanto ela estiver ativa; ao trocar de categoria, tranca de novo.
+  const [unlockedAdultId, setUnlockedAdultId] = useState(null);
+  const unlockedRef = useRef(null);
+  const [pendingCategory, setPendingCategory] = useState(null);
 
   const update = (changes) => {
     const next = new URLSearchParams(params);
@@ -43,16 +48,46 @@ export default function Browse({ type }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dq]);
 
+  // Ao abrir a tela, qualquer liberação antiga deste tipo é descartada (voltar do player tranca de novo).
+  useEffect(() => {
+    svc.lockAdult(type);
+    unlockedRef.current = null;
+    setUnlockedAdultId(null);
+  }, [svc, type]);
+
+  useEffect(() => {
+    const prev = unlockedRef.current;
+    if (prev && prev !== categoryId) {
+      svc.lockAdult(type, prev);
+      unlockedRef.current = null;
+      setUnlockedAdultId(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryId]);
+
   const cats = useAsync(() => svc.categories(type), [svc, type, profile.id]);
+  const adultOn = !!viewer?.adultControlEnabled;
+  const activeCategory = cats.data?.categories.find((c) => c.id === categoryId);
+  const checking = adultOn && !!categoryId && !cats.data;
+  const locked = adultOn && !!categoryId && !!activeCategory?.isAdult && unlockedAdultId !== categoryId;
   const list = useAsync(
-    () => svc.streams(type, { categoryId, q: params.get('q') ?? '', page, pageSize: PAGE_SIZE }),
-    [svc, type, categoryId, params.get('q'), page, profile.id],
+    () => (locked || checking ? null : svc.streams(type, { categoryId, q: params.get('q') ?? '', page, pageSize: PAGE_SIZE })),
+    [svc, type, categoryId, params.get('q'), page, profile.id, locked, checking],
   );
 
   if (cats.error && !cats.data) return <CatalogError error={cats.error} onRetry={cats.reload} />;
   const categories = cats.data?.categories ?? [];
   const items = list.data ? list.data.items.map((i) => toContent(i, type, list.data.serverId)) : [];
   const chip = (active) => `shrink-0 rounded-full border px-3 py-1 text-sm transition ${active ? 'border-primary bg-primary text-on-button' : 'border-fg/15 text-fg/70 hover:border-fg/40 hover:text-fg'}`;
+  const serverLocked = list.error?.code === 'ADULT_LOCKED';
+
+  const selectCategory = (c) => {
+    if (c?.isAdult && adultOn && unlockedAdultId !== c.id) {
+      setPendingCategory(c);
+      return;
+    }
+    update({ categoria: c ? c.id : '', pagina: '' });
+  };
 
   return (
     <div className="space-y-5 px-4 py-6 sm:px-6">
@@ -68,16 +103,25 @@ export default function Browse({ type }) {
 
       {categories.length > 0 && (
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="group" aria-label="Categorias">
-          <button type="button" className={chip(!categoryId)} aria-pressed={!categoryId} onClick={() => update({ categoria: '', pagina: '' })}>Todas</button>
+          <button type="button" className={chip(!categoryId)} aria-pressed={!categoryId} onClick={() => selectCategory(null)}>Todas</button>
           {categories.map((c) => (
-            <button key={c.id} type="button" className={chip(categoryId === c.id)} aria-pressed={categoryId === c.id} onClick={() => update({ categoria: c.id, pagina: '' })}>
+            <button key={c.id} type="button" className={chip(categoryId === c.id)} aria-pressed={categoryId === c.id} onClick={() => selectCategory(c)}>
+              {c.isAdult && adultOn && unlockedAdultId !== c.id && <Lock className="mr-1 inline h-3 w-3 align-[-1px]" aria-hidden />}
               {c.name}
             </button>
           ))}
         </div>
       )}
 
-      {list.error && !list.data ? (
+      {locked || serverLocked ? (
+        <EmptyState
+          icon={Lock}
+          title="Conteúdo restrito"
+          action={<button type="button" className="btn btn-primary" onClick={() => setPendingCategory(activeCategory ?? { id: categoryId })}>Desbloquear com PIN</button>}
+        >
+          Esta categoria é protegida pelo controle parental.
+        </EmptyState>
+      ) : list.error && !list.data ? (
         <CatalogError error={list.error} onRetry={list.reload} />
       ) : !list.data ? (
         <Spinner />
@@ -89,6 +133,19 @@ export default function Browse({ type }) {
           <Pagination page={list.data.page} pageSize={list.data.pageSize} total={list.data.total} onChange={(p) => { update({ pagina: p > 1 ? String(p) : '' }); window.scrollTo({ top: 0 }); }} />
         </div>
       )}
+
+      <AdultPinModal
+        open={!!pendingCategory}
+        type={type}
+        categoryId={pendingCategory?.id}
+        onClose={() => setPendingCategory(null)}
+        onSuccess={() => {
+          unlockedRef.current = pendingCategory.id;
+          setUnlockedAdultId(pendingCategory.id);
+          update({ categoria: pendingCategory.id, pagina: '' });
+          setPendingCategory(null);
+        }}
+      />
     </div>
   );
 }

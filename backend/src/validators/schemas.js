@@ -128,6 +128,18 @@ export const viewerDeleteSchema = z.object({ password: z.string().min(1).max(200
 export const viewerStatusSchema = z.object({ status: z.enum(['active', 'suspended']) });
 export const viewerPasswordSchema = z.object({ password: passwordField });
 
+const pinField = z.string().regex(/^\d{4}$/, 'PIN deve ter exatamente 4 dígitos.');
+export const adultControlSchema = z.object({
+  enabled: z.boolean(),
+  pin: pinField.optional(),
+  currentPin: pinField.optional(),
+});
+export const adultControlVerifySchema = z.object({
+  pin: pinField,
+  type: z.enum(['live', 'vod', 'series']).optional(),
+  categoryId: z.string().regex(/^[A-Za-z0-9_-]{1,40}$/).optional(),
+});
+
 export const profileSchema = z.object({
   name: plainText(1, 40, 'Nome do perfil'),
   avatar: z.string().regex(/^(violet|blue|pink|amber|emerald|rose|cyan|slate|(people|pet|robot|smiley|avatar)-\d{1,2})$/, 'Avatar inválido.').default('people-1'),

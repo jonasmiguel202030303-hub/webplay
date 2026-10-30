@@ -15,7 +15,7 @@ import { checkLine, listServerRows, toAppError } from './sourceService.js';
 
 // ---------- Visões ----------
 
-const viewerView = (v) => ({ id: v.id, name: v.name, email: v.email });
+const viewerView = (v) => ({ id: v.id, name: v.name, email: v.email, adultControlEnabled: !!v.adult_control_enabled });
 
 export const profileView = (p) => ({ id: p.id, name: p.name, avatar: p.avatar, isKids: !!p.is_kids });
 
@@ -228,6 +228,32 @@ export async function getViewerSession(tenant, viewer) {
   const profiles = await listProfiles(tenant.id, viewer.id);
   const account = viewer.line ? await refreshLine(viewer.line, { maxAgeMs: 60_000 }) : null;
   return { viewer: viewerView(viewer), profiles, account };
+}
+
+// ---------- Controle parental (PIN de categorias adultas) ----------
+
+export async function getAdultControlStatus(viewerId) {
+  const v = await queryOne('SELECT adult_control_enabled, adult_pin_hash FROM viewer_accounts WHERE id = ?', [viewerId]);
+  return { enabled: !!v?.adult_control_enabled, hasPin: !!v?.adult_pin_hash };
+}
+
+export async function setAdultControl(req, tenant, viewerId, { enabled, pin, currentPin }) {
+  const v = await queryOne('SELECT adult_control_enabled, adult_pin_hash FROM viewer_accounts WHERE id = ? AND tenant_id = ?', [viewerId, tenant.id]);
+  if (!v) throw notFound('Conta não encontrada.', 'NOT_FOUND');
+  if (v.adult_pin_hash && (enabled !== !!v.adult_control_enabled || pin)) {
+    if (!currentPin || !(await bcrypt.compare(currentPin, v.adult_pin_hash))) throw badRequest('PIN atual incorreto.', 'INVALID_PIN');
+  }
+  if (enabled && !v.adult_pin_hash && !pin) throw badRequest('Defina um PIN de 4 dígitos para ativar o controle parental.', 'PIN_REQUIRED');
+  const pinHash = pin ? await hashPassword(pin) : v.adult_pin_hash;
+  await query('UPDATE viewer_accounts SET adult_control_enabled = ?, adult_pin_hash = ? WHERE id = ?', [enabled ? 1 : 0, pinHash, viewerId]);
+  await audit(req, { action: 'viewer.adult_control', entityType: 'viewer', entityId: viewerId, tenantId: tenant.id, metadata: { enabled } });
+  return { enabled: !!enabled, hasPin: !!pinHash };
+}
+
+export async function verifyAdultPin(viewerId, pin) {
+  const v = await queryOne('SELECT adult_pin_hash FROM viewer_accounts WHERE id = ?', [viewerId]);
+  if (!v?.adult_pin_hash) return false;
+  return bcrypt.compare(pin, v.adult_pin_hash);
 }
 
 // ---------- Perfis ----------

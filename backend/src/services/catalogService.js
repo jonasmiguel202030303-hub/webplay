@@ -1,7 +1,35 @@
-import { notFound } from '../utils/errors.js';
+import { notFound, forbidden } from '../utils/errors.js';
+import { verifyToken } from '../utils/tokens.js';
 import * as sources from './sourceService.js';
 import * as viewers from './viewerService.js';
 import { currentLine } from './lineContext.js';
+
+/**
+ * Controle parental no servidor: com o PIN ativo, categorias adultas ficam fora de "Todas", busca e home, e só abrem
+ * com a prova de desbloqueio (cabeçalho X-Adult-Unlock, um ou mais tokens separados por vírgula) da própria categoria.
+ */
+export async function adultGate(req, serverId, type) {
+  if (!req.viewer?.adult_control_enabled) return null;
+  const { categories } = await sources.getCategories(req.tenant.id, serverId, type);
+  const ids = new Set(categories.filter((c) => c.isAdult).map((c) => String(c.id)));
+  const scopes = new Set(
+    String(req.get('x-adult-unlock') ?? '')
+      .split(',')
+      .map((t) => verifyToken(t.trim(), 'adult-unlock'))
+      .filter((p) => p && Number(p.sub) === req.viewer.id)
+      .map((p) => p.scope),
+  );
+  const unlocked = (categoryId) => scopes.has(`${type}:${categoryId}`);
+  return {
+    ids,
+    unlocked,
+    assertAllowed(categoryId) {
+      if (categoryId !== undefined && ids.has(String(categoryId)) && !unlocked(categoryId)) {
+        throw forbidden('Categoria protegida pelo controle parental. Digite o PIN para continuar.', 'ADULT_LOCKED');
+      }
+    },
+  };
+}
 
 export async function resolveServerId(tenantId, raw) {
   // Espectador com linha própria só enxerga o servidor onde a linha existe.
@@ -17,7 +45,7 @@ export async function resolveServerId(tenantId, raw) {
 }
 
 /** Monta a página inicial do espectador: continuar assistindo, favoritos, histórico e carrosséis por categoria. */
-export async function buildHome(tenantId, serverId, profile) {
+export async function buildHome(tenantId, serverId, profile, { hideAdult = false } = {}) {
   const kidsOnly = profile.isKids;
   const [continueWatching, history, favorites] = await Promise.all([
     viewers.listContinueWatching(tenantId, profile.id),
@@ -32,7 +60,7 @@ export async function buildHome(tenantId, serverId, profile) {
     try {
       const { categories, warning } = await sources.getCategories(tenantId, serverId, type, { kidsOnly });
       if (warning) warnings.push(warning);
-      for (const c of categories.slice(0, type === 'live' ? 3 : 4)) plan.push({ type, category: c });
+      for (const c of categories.filter((x) => !(hideAdult && x.isAdult)).slice(0, type === 'live' ? 3 : 4)) plan.push({ type, category: c });
     } catch (err) {
       warnings.push(err.message);
     }
@@ -59,12 +87,13 @@ export async function buildHome(tenantId, serverId, profile) {
   };
 }
 
-export async function search(tenantId, serverId, q, profile) {
+export async function search(tenantId, serverId, q, profile, { gates = {} } = {}) {
   const kidsOnly = profile.isKids;
+  const hide = (type) => gates[type]?.ids ?? null;
   const [live, vod, series] = await Promise.allSettled([
-    sources.getStreams(tenantId, serverId, 'live', { q, pageSize: 30, kidsOnly }),
-    sources.getStreams(tenantId, serverId, 'vod', { q, pageSize: 30, kidsOnly }),
-    sources.getStreams(tenantId, serverId, 'series', { q, pageSize: 30, kidsOnly }),
+    sources.getStreams(tenantId, serverId, 'live', { q, pageSize: 30, kidsOnly, hideCategoryIds: hide('live') }),
+    sources.getStreams(tenantId, serverId, 'vod', { q, pageSize: 30, kidsOnly, hideCategoryIds: hide('vod') }),
+    sources.getStreams(tenantId, serverId, 'series', { q, pageSize: 30, kidsOnly, hideCategoryIds: hide('series') }),
   ]);
   const first = [live, vod, series].find((r) => r.status === 'rejected');
   if (first && [live, vod, series].every((r) => r.status === 'rejected')) throw first.reason;

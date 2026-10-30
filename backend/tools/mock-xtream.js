@@ -18,6 +18,7 @@ const liveCategories = [
   { category_id: '1', category_name: 'Notícias (demo)' },
   { category_id: '2', category_name: 'Esportes (demo)' },
   { category_id: '3', category_name: 'Infantil (demo)' },
+  { category_id: '4', category_name: 'XXX | +18 (demo)' },
 ];
 const vodCategories = [
   { category_id: '10', category_name: 'Ação (demo)' },
@@ -25,14 +26,21 @@ const vodCategories = [
   { category_id: '12', category_name: 'Infantil e Desenhos (demo)' },
 ];
 
-const liveStreams = Array.from({ length: 24 }, (_, i) => ({
+const liveStreams = [...Array.from({ length: 24 }, (_, i) => ({
   num: i + 1,
   name: `Canal Demo ${i + 1}`,
   stream_type: 'live',
   stream_id: 100 + i,
   stream_icon: '',
   category_id: String((i % 3) + 1),
-}));
+})), ...Array.from({ length: 3 }, (_, i) => ({
+  num: 25 + i,
+  name: `Canal Adulto Demo ${i + 1}`,
+  stream_type: 'live',
+  stream_id: 200 + i,
+  stream_icon: '',
+  category_id: '4',
+}))];
 const vodStreams = Array.from({ length: 30 }, (_, i) => ({
   num: i + 1,
   name: `Filme Demo ${i + 1}`,

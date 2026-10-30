@@ -247,6 +247,9 @@ export async function refreshCategories(req, tenantId, serverId) {
 }
 
 const KIDS_RE = /infantil|kids|crian[cç]|desenho|cartoon|disney|junior|baby/i;
+export const ADULT_RE = /adult|\+\s?(18|21)|(18|21)\s?\+|\b(18|21)\s?(anos?|yo)\b|\bxxx|porn|erotic|\bsex(o|y|shop|s)?\b|hentai|playboy|nsfw|for adults/i;
+/** Os provedores nomeiam categorias adultas de formas diferentes ("+18", "Adultos", "XXX", "Erótico"...): compara sem acentos. */
+export const isAdultName = (name) => ADULT_RE.test(String(name ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
 
 export async function getCategories(tenantId, serverId, type, { kidsOnly = false } = {}) {
   const server = await loadServer(tenantId, serverId);
@@ -276,7 +279,7 @@ export async function getCategories(tenantId, serverId, type, { kidsOnly = false
     );
   }
   if (kidsOnly) rows = rows.filter((r) => KIDS_RE.test(r.name));
-  return { categories: rows.map((r) => ({ id: r.category_id, name: r.name })), warning };
+  return { categories: rows.map((r) => ({ id: r.category_id, name: r.name, isAdult: isAdultName(r.name) })), warning };
 }
 
 const fold = (s) => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -290,13 +293,14 @@ async function allStreams(tenantId, serverId, type) {
   });
 }
 
-export async function getStreams(tenantId, serverId, type, { categoryId, q, page = 1, pageSize = 40, kidsOnly = false } = {}) {
+export async function getStreams(tenantId, serverId, type, { categoryId, q, page = 1, pageSize = 40, kidsOnly = false, hideCategoryIds = null } = {}) {
   let list;
   try {
     list = await allStreams(tenantId, serverId, type);
   } catch (err) {
     throw toAppError(err);
   }
+  if (hideCategoryIds?.size) list = list.filter((s) => !hideCategoryIds.has(String(s.categoryId)));
   if (kidsOnly) {
     const { categories } = await getCategories(tenantId, serverId, type, { kidsOnly: true });
     const ids = new Set(categories.map((c) => c.id));

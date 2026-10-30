@@ -27,6 +27,17 @@ export function signViewerToken({ viewerId, tenantId, tokenVersion, jti }) {
   });
 }
 
+/** Prova curta de que o PIN parental foi digitado para uma categoria específica (scope = "tipo:categoria"). */
+export function signAdultUnlockToken({ viewerId, scope }) {
+  return jwt.sign({ scope }, config.jwtSecret, {
+    algorithm: 'HS256',
+    issuer: ISSUER,
+    audience: 'adult-unlock',
+    subject: String(viewerId),
+    expiresIn: '30m',
+  });
+}
+
 export function verifyToken(token, audience) {
   try {
     return jwt.verify(token, config.jwtSecret, { algorithms: ['HS256'], issuer: ISSUER, audience });

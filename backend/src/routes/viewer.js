@@ -2,16 +2,17 @@ import { Router } from 'express';
 import { asyncHandler, badRequest } from '../utils/errors.js';
 import { idParam } from '../utils/http.js';
 import { validate } from '../middleware/validate.js';
-import { authLimiter } from '../middleware/rateLimit.js';
+import { sensitiveLimiter, authLimiter } from '../middleware/rateLimit.js';
 import { noStore } from '../middleware/security.js';
 import { authenticateViewer, bindViewerLine, requireActiveLine, requireActiveSubscription, requireProfile, resolveTenantFromSlug } from '../middleware/auth.js';
 import {
   viewerRegisterSchema, loginSchema, lineLoginSchema, emailOnlySchema, resetSchema, profileSchema, contentRef, progressSchema, viewerDeleteSchema,
+  adultControlSchema, adultControlVerifySchema,
 } from '../validators/schemas.js';
 import * as viewers from '../services/viewerService.js';
 import * as sources from '../services/sourceService.js';
 import * as catalog from '../services/catalogService.js';
-import { VIEWER_COOKIE, cookieOptions, verifyToken, viewerCookieMaxAge } from '../utils/tokens.js';
+import { VIEWER_COOKIE, cookieOptions, signAdultUnlockToken, verifyToken, viewerCookieMaxAge } from '../utils/tokens.js';
 
 const router = Router({ mergeParams: true });
 router.use(noStore, resolveTenantFromSlug);
@@ -27,6 +28,14 @@ const streamIdParam = (req) => {
 };
 
 const setSession = (res, token) => res.cookie(VIEWER_COOKIE, token, cookieOptions(viewerCookieMaxAge()));
+
+/** Com o PIN parental ativo, abrir/reproduzir um título de categoria adulta exige a prova de desbloqueio dessa categoria. */
+const guardAdult = async (req, serverId, type, streamId) => {
+  if (!req.viewer.adult_control_enabled) return;
+  const gate = await catalog.adultGate(req, serverId, type);
+  const stream = await sources.getStream(req.tenant.id, serverId, type, streamId);
+  gate?.assertAllowed(stream.categoryId);
+};
 
 // ----- Acesso (sem sessão) -----
 router.post('/register', authLimiter(), requireActiveSubscription, validate(viewerRegisterSchema), asyncHandler(async (req, res) => {
@@ -106,6 +115,22 @@ router.delete('/profiles/:id', asyncHandler(async (req, res) => {
   res.json({ ok: true });
 }));
 
+// ----- Controle parental (PIN de categorias adultas) -----
+router.get('/account/adult-control', asyncHandler(async (req, res) => {
+  res.json(await viewers.getAdultControlStatus(req.viewer.id));
+}));
+
+router.put('/account/adult-control', sensitiveLimiter(), validate(adultControlSchema), asyncHandler(async (req, res) => {
+  res.json(await viewers.setAdultControl(req, req.tenant, req.viewer.id, req.valid.body));
+}));
+
+router.post('/account/adult-control/verify', authLimiter(), validate(adultControlVerifySchema), asyncHandler(async (req, res) => {
+  const { pin, type, categoryId } = req.valid.body;
+  const ok = await viewers.verifyAdultPin(req.viewer.id, pin);
+  const token = ok && type && categoryId ? signAdultUnlockToken({ viewerId: req.viewer.id, scope: `${type}:${categoryId}` }) : null;
+  res.json({ ok, token });
+}));
+
 // ----- Conteúdo (exige assinatura/teste ativo e perfil) -----
 router.use(requireActiveSubscription, requireProfile, requireActiveLine);
 
@@ -115,14 +140,18 @@ router.get('/servers', asyncHandler(async (req, res) => {
 
 router.get('/home', asyncHandler(async (req, res) => {
   const serverId = await catalog.resolveServerId(req.tenant.id, req.query.serverId);
-  res.json(await catalog.buildHome(req.tenant.id, serverId, req.profile));
+  res.json(await catalog.buildHome(req.tenant.id, serverId, req.profile, { hideAdult: !!req.viewer.adult_control_enabled }));
 }));
 
 router.get('/search', asyncHandler(async (req, res) => {
   const q = String(req.query.q ?? '').trim().slice(0, 80);
   if (q.length < 2) throw badRequest('Digite ao menos 2 caracteres para buscar.', 'QUERY_TOO_SHORT');
   const serverId = await catalog.resolveServerId(req.tenant.id, req.query.serverId);
-  res.json(await catalog.search(req.tenant.id, serverId, q, req.profile));
+  const gates = {};
+  if (req.viewer.adult_control_enabled) {
+    await Promise.all(['live', 'vod', 'series'].map(async (t) => { gates[t] = await catalog.adultGate(req, serverId, t).catch(() => null); }));
+  }
+  res.json(await catalog.search(req.tenant.id, serverId, q, req.profile, { gates }));
 }));
 
 router.get('/catalog/:type/categories', asyncHandler(async (req, res) => {
@@ -136,7 +165,10 @@ router.get('/catalog/:type/streams', asyncHandler(async (req, res) => {
   const pageSize = Math.min(60, Math.max(1, Number.parseInt(req.query.pageSize ?? '40', 10) || 40));
   const q = typeof req.query.q === 'string' ? req.query.q.slice(0, 80) : undefined;
   const categoryId = typeof req.query.categoryId === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(req.query.categoryId) ? req.query.categoryId : undefined;
-  res.json({ serverId, ...(await sources.getStreams(req.tenant.id, serverId, typeParam(req), { categoryId, q, page, pageSize, kidsOnly: req.profile.isKids })) });
+  const type = typeParam(req);
+  const gate = await catalog.adultGate(req, serverId, type);
+  gate?.assertAllowed(categoryId);
+  res.json({ serverId, ...(await sources.getStreams(req.tenant.id, serverId, type, { categoryId, q, page, pageSize, kidsOnly: req.profile.isKids, hideCategoryIds: categoryId ? null : gate?.ids })) });
 }));
 
 router.get('/details/:type/:streamId', asyncHandler(async (req, res) => {
@@ -144,6 +176,7 @@ router.get('/details/:type/:streamId', asyncHandler(async (req, res) => {
   if (type === 'live') throw badRequest('Detalhes não disponíveis para canais ao vivo.', 'INVALID_TYPE');
   const serverId = await catalog.resolveServerId(req.tenant.id, req.query.serverId);
   const streamId = streamIdParam(req);
+  await guardAdult(req, serverId, type, streamId);
   const [stream, details] = await Promise.all([
     sources.getStream(req.tenant.id, serverId, type, streamId),
     sources.getDetails(req.tenant.id, serverId, type, streamId).catch(() => null),
@@ -163,6 +196,7 @@ router.get('/play/series/:streamId/episode/:episodeId', asyncHandler(async (req,
   if (!/^[A-Za-z0-9_-]{1,40}$/.test(req.params.episodeId)) throw badRequest('Identificador de episódio inválido.', 'INVALID_ID');
   const extension = typeof req.query.ext === 'string' && /^[a-z0-9]{2,5}$/i.test(req.query.ext) ? req.query.ext : 'mp4';
   const serverId = await catalog.resolveServerId(req.tenant.id, req.query.serverId);
+  await guardAdult(req, serverId, 'series', streamId);
   const playback = await sources.getEpisodePlayback(req.tenant.id, serverId, streamId, req.params.episodeId, extension);
   const ref = { serverId, contentType: 'series', streamId, name: playback.stream.name, icon: playback.stream.icon ?? null };
   await viewers.recordHistory(req.tenant.id, req.profile.id, ref);
@@ -175,6 +209,7 @@ router.get('/play/:type/:streamId', asyncHandler(async (req, res) => {
   if (type === 'series') throw badRequest('Escolha um episódio para reproduzir a série.', 'INVALID_TYPE');
   const streamId = streamIdParam(req);
   const serverId = await catalog.resolveServerId(req.tenant.id, req.query.serverId);
+  await guardAdult(req, serverId, type, streamId);
   const playback = await sources.getPlayback(req.tenant.id, serverId, type, streamId);
   const ref = { serverId, contentType: type, streamId, name: playback.stream.name, icon: playback.stream.icon ?? null };
   await viewers.recordHistory(req.tenant.id, req.profile.id, ref);
