@@ -139,7 +139,7 @@ export default function ProfileSelect() {
   const canAdd = profiles.length < (tenant.maxProfilesPerViewer ?? 5);
 
   const choose = (p) => {
-    playProfileSound();
+    if (tenant.uiSoundsEnabled) playProfileSound();
     selectProfile(p.id);
     navigate(target, { replace: true });
   };

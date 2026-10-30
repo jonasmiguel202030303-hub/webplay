@@ -69,7 +69,7 @@ router.get('/tenants/:slug/manifest.webmanifest', asyncHandler(async (req, res) 
       display: 'standalone',
       orientation: 'any',
       background_color: b.color_background,
-      theme_color: b.color_primary,
+      theme_color: '#000000',
       lang: 'pt-BR',
       icons,
     }),

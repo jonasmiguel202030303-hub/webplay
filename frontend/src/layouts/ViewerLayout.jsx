@@ -19,7 +19,7 @@ const NAV = [
 ];
 
 function ProfileMenu() {
-  const { slug, profile, viewer, logout } = useViewer();
+  const { slug, tenant, profile, viewer, logout } = useViewer();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const soundOn = useSoundEnabled();
@@ -57,18 +57,20 @@ function ProfileMenu() {
           <button type="button" role="menuitem" className={item} onClick={() => go(`/${slug}/perfis`)}><Users className="h-4 w-4" /> Trocar perfil</button>
           <button type="button" role="menuitem" className={item} onClick={() => go(`/${slug}/historico`)}><Clock className="h-4 w-4" /> Histórico</button>
           <button type="button" role="menuitem" className={item} onClick={() => go(`/${slug}/conta`)}><User className="h-4 w-4" /> Minha conta</button>
-          <button
-            type="button"
-            role="menuitemcheckbox"
-            aria-checked={soundOn}
-            className={item}
-            onClick={() => {
-              setSoundEnabled(!soundOn);
-              if (!soundOn) playPreview();
-            }}
-          >
-            {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />} Som: {soundOn ? 'ligado' : 'desligado'}
-          </button>
+          {tenant.uiSoundsEnabled && (
+            <button
+              type="button"
+              role="menuitemcheckbox"
+              aria-checked={soundOn}
+              className={item}
+              onClick={() => {
+                setSoundEnabled(!soundOn);
+                if (!soundOn) playPreview();
+              }}
+            >
+              {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />} Som: {soundOn ? 'ligado' : 'desligado'}
+            </button>
+          )}
           <button
             type="button"
             role="menuitem"

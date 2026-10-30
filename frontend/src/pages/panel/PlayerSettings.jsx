@@ -51,7 +51,7 @@ function SettingsForm({ initial }) {
           <div className="space-y-4">
             <Switch checked={form.allowViewerSignup} onChange={flag('allowViewerSignup')} label="Permitir cadastro pelo próprio espectador" description="Desative para que apenas você crie contas pelo painel." />
             <Switch checked={form.kidsProfilesEnabled} onChange={flag('kidsProfilesEnabled')} label="Perfis infantis" description="Perfis infantis ocultam categorias adultas. O filtro é uma heurística pelo nome da categoria e não substitui a supervisão de um responsável." />
-            <Switch checked={form.uiSoundsEnabled} onChange={flag('uiSoundsEnabled')} label="Sons da interface" description="Sons curtos em ações de navegação." />
+            <Switch checked={form.uiSoundsEnabled} onChange={flag('uiSoundsEnabled')} label="Sons da interface" description="Som de abertura na tela de login e ao escolher o perfil, com botão para o espectador ligar/desligar." />
           </div>
         </Card>
         <Card title="Limites">

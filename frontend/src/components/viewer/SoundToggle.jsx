@@ -1,9 +1,12 @@
 import { Volume2, VolumeX } from 'lucide-react';
 import { playPreview, setSoundEnabled, useSoundEnabled } from '../../utils/sound.js';
+import { useViewer } from '../../contexts/ViewerContext.jsx';
 
-/** Liga/desliga os sons da interface (preferência salva neste navegador). */
+/** Liga/desliga os sons da interface (preferência salva neste navegador). Só aparece se o painel do cliente ativou os sons. */
 export default function SoundToggle({ className = '' }) {
+  const { tenant } = useViewer();
   const on = useSoundEnabled();
+  if (!tenant.uiSoundsEnabled) return null;
   const toggle = () => {
     setSoundEnabled(!on);
     if (!on) playPreview();

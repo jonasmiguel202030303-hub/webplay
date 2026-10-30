@@ -24,6 +24,9 @@ const DARK = [17, 17, 17];
 /** Escolhe branco ou quase preto conforme o contraste com o fundo informado. */
 export const readableOn = (rgb) => (luminance(rgb) > 0.45 ? DARK : WHITE);
 
+/** Barra de status do celular/PWA sempre preta, independente da cor da marca. */
+const STATUS_BAR_COLOR = '#000000';
+
 export const DEFAULT_COLORS = { primary: '#7c3aed', secondary: '#2563eb', button: '#7c3aed', background: '#050505' };
 
 /** Retorna as variáveis CSS (objeto de style) para um conjunto de cores da marca. */
@@ -44,11 +47,10 @@ export function themeVars(colors = {}) {
 export function applyTheme(colors, el = document.documentElement) {
   const vars = themeVars(colors);
   for (const [k, v] of Object.entries(vars)) el.style.setProperty(k, v);
-  const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta && colors?.primary) meta.setAttribute('content', colors.primary);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', STATUS_BAR_COLOR);
 }
 
 export function resetTheme(el = document.documentElement) {
   for (const k of Object.keys(themeVars())) el.style.removeProperty(k);
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', DEFAULT_COLORS.primary);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', STATUS_BAR_COLOR);
 }

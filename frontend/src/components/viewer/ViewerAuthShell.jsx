@@ -4,6 +4,8 @@ import { MessageCircle } from 'lucide-react';
 import { api } from '../../services/api.js';
 import { useViewer } from '../../contexts/ViewerContext.jsx';
 import WhatsAppFloat from '../WhatsAppFloat.jsx';
+import SoundToggle from './SoundToggle.jsx';
+import { playProfileSound } from '../../utils/sound.js';
 
 const DARK = { '--c-bg': '0 0 0', '--c-fg': '255 255 255' };
 const waLink = (n) => `https://wa.me/${String(n).replace(/\D/g, '')}`;
@@ -41,6 +43,19 @@ export default function ViewerAuthShell({ title, subtitle, children, footer }) {
   const brand = tenant.brand;
   const logo = brand.assets.logo || brand.assets.menuLogo;
   const bg = brand.assets.background;
+  const soundsOn = !!tenant.uiSoundsEnabled;
+
+  // Navegadores só liberam áudio após o primeiro toque/tecla; o som de abertura toca uma vez nesse momento.
+  useEffect(() => {
+    if (!soundsOn) return undefined;
+    const events = ['pointerdown', 'keydown'];
+    const once = () => {
+      events.forEach((ev) => window.removeEventListener(ev, once));
+      playProfileSound();
+    };
+    events.forEach((ev) => window.addEventListener(ev, once));
+    return () => events.forEach((ev) => window.removeEventListener(ev, once));
+  }, [soundsOn]);
 
   return (
     <div className="relative isolate min-h-screen bg-black text-fg" style={DARK}>
@@ -49,7 +64,7 @@ export default function ViewerAuthShell({ title, subtitle, children, footer }) {
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.55)_0%,rgba(0,0,0,0.9)_100%)]" aria-hidden />
 
       <div className="relative flex min-h-screen flex-col">
-        <header className="px-5 py-5 sm:px-12 sm:py-7">
+        <header className="flex items-center justify-between gap-3 px-5 py-5 sm:px-12 sm:py-7">
           <Link to={`/${slug}`} aria-label={`Página inicial de ${brand.displayName}`} className="inline-block">
             {logo ? (
               <img src={logo} alt={brand.displayName} className="h-10 max-w-[220px] object-contain sm:h-12" />
@@ -57,6 +72,7 @@ export default function ViewerAuthShell({ title, subtitle, children, footer }) {
               <span className="text-2xl font-extrabold uppercase tracking-[3px] text-white sm:text-[32px]">{brand.displayName}</span>
             )}
           </Link>
+          <SoundToggle />
         </header>
 
         <main className="flex flex-1 items-center justify-center px-4 pb-10">
