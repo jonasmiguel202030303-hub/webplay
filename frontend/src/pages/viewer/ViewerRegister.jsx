@@ -10,7 +10,7 @@ import { useTitle } from '../../hooks/useTitle.js';
 import { afterLoginPath } from './afterLogin.js';
 
 export default function ViewerRegister() {
-  const { slug, tenant, viewer, register, selectProfile } = useViewer();
+  const { slug, tenant, viewer, register } = useViewer();
   useTitle(`Criar conta — ${tenant.brand.displayName}`);
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', password: '', acceptTerms: false });
@@ -28,8 +28,8 @@ export default function ViewerRegister() {
     setError(null);
     setErrors({});
     try {
-      const data = await register(form);
-      navigate(afterLoginPath(slug, data.profiles, selectProfile), { replace: true });
+      await register(form);
+      navigate(afterLoginPath(slug), { replace: true });
     } catch (err) {
       setErrors(fieldErrors(err));
       setError(err);

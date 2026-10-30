@@ -124,12 +124,14 @@ export function ViewerProvider({ slug, children }) {
   );
 
   const acceptSession = useCallback((data) => {
+    // Cada novo acesso exige escolher o perfil de novo (ignora o perfil guardado de uma sessão anterior).
+    selectProfile(null);
     setViewer(data.viewer);
     setProfiles(data.profiles);
     setAccount(data.account ?? null);
     setSessionLoading(false);
     return data;
-  }, []);
+  }, [selectProfile]);
 
   const login = useCallback(async (email, password) => acceptSession(await svc.login(email, password)), [svc, acceptSession]);
   const lineLogin = useCallback(async (username, password) => acceptSession(await svc.lineLogin(username, password)), [svc, acceptSession]);

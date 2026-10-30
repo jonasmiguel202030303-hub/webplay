@@ -9,7 +9,7 @@ import { useTitle } from '../../hooks/useTitle.js';
 import { afterLoginPath } from './afterLogin.js';
 
 export default function ViewerLogin() {
-  const { slug, tenant, viewer, profile, lineLogin, selectProfile } = useViewer();
+  const { slug, tenant, viewer, profile, lineLogin } = useViewer();
   useTitle(`Entrar — ${tenant.brand.displayName}`);
   const navigate = useNavigate();
   const location = useLocation();
@@ -25,8 +25,8 @@ export default function ViewerLogin() {
     setBusy(true);
     setError(null);
     try {
-      const data = await lineLogin(form.username.trim(), form.password);
-      navigate(afterLoginPath(slug, data.profiles, selectProfile, from), { replace: true, state: { from } });
+      await lineLogin(form.username.trim(), form.password);
+      navigate(afterLoginPath(slug), { replace: true, state: { from } });
     } catch (err) {
       setError(err);
       setBusy(false);
