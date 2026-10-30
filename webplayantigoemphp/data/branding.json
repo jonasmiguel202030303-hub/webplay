@@ -1,0 +1,23 @@
+{
+    "app_name": "WEBPLAY",
+    "logo_url": "",
+    "primary_color": "#84cc16",
+    "secondary_color": "#a3e635",
+    "accent_color": "#4d7c0f",
+    "bg_primary": "#050509",
+    "bg_secondary": "#0a0a10",
+    "bg_card": "#0f0f17",
+    "text_color": "#f0f0f5",
+    "text_secondary": "#a0a0b0",
+    "border_color": "#1a1a2e",
+    "whatsapp_enabled": false,
+    "whatsapp_number": "00000",
+    "whatsapp_message": "Olá! Preciso de ajuda",
+    "intro_enabled": true,
+    "intro_duration": 3,
+    "intro_style": "netflix",
+    "signup_enabled": false,
+    "signup_message": "Olá! Quero criar uma conta",
+    "display_mode": "carousel",
+    "updated_at": "2026-03-04 16:50:55"
+}

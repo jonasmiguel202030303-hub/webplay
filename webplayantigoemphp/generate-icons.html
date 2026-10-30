@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Ícones — WebPlay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Inter',sans-serif;background:#0a0a0f;color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+        .container{max-width:700px;width:100%;text-align:center}
+        h1{font-size:1.6rem;font-weight:800;margin-bottom:6px;background:linear-gradient(135deg,#fff,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .subtitle{color:#64748b;font-size:.9rem;margin-bottom:32px}
+        .controls{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:28px}
+        .color-ctrl{display:flex;flex-direction:column;gap:4px;align-items:center}
+        .color-ctrl label{font-size:.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+        .color-ctrl input[type=color]{width:42px;height:42px;border:2px solid rgba(255,255,255,0.1);border-radius:10px;cursor:pointer;background:none}
+        .text-ctrl{display:flex;flex-direction:column;gap:4px;align-items:center}
+        .text-ctrl input[type=text]{width:100px;padding:8px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;text-align:center;font-family:inherit;font-weight:700;font-size:.9rem;outline:none}
+        .text-ctrl input:focus{border-color:#7c3aed}
+        .canvases{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:28px}
+        .canvas-wrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+        .canvas-wrap span{font-size:.7rem;color:#64748b;font-weight:600}
+        canvas{border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+        #c192{width:96px;height:96px}
+        #c512{width:160px;height:160px}
+        .actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+        .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:12px;font-size:.88rem;font-weight:700;cursor:pointer;border:none;transition:all .3s;font-family:inherit;text-decoration:none}
+        .btn-primary{background:linear-gradient(135deg,#5b21b6,#7c3aed,#a855f7);color:#fff}
+        .btn-primary:hover{transform:scale(1.03);box-shadow:0 6px 24px rgba(124,58,237,.4)}
+        .btn-secondary{background:rgba(255,255,255,0.06);color:#e2e8f0;border:1px solid rgba(255,255,255,0.1)}
+        .btn-secondary:hover{background:rgba(255,255,255,0.1)}
+        .info{margin-top:24px;padding:16px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);border-radius:12px;font-size:.8rem;color:#94a3b8;line-height:1.6}
+        .info i{color:#7c3aed}
+        .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);padding:12px 24px;background:#1e1b4b;border:1px solid #7c3aed;color:#fff;border-radius:10px;font-size:.85rem;opacity:0;transition:all .4s;z-index:999}
+        .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-magic"></i> Gerador de Ícones PWA</h1>
+        <p class="subtitle">Gere ícones personalizados para instalação do app</p>
+        <div class="controls">
+            <div class="color-ctrl"><label>Fundo</label><input type="color" id="bgColor" value="#0a0a0f"></div>
+            <div class="color-ctrl"><label>Cor 1</label><input type="color" id="color1" value="#c084fc"></div>
+            <div class="color-ctrl"><label>Cor 2</label><input type="color" id="color2" value="#7c3aed"></div>
+            <div class="color-ctrl"><label>Cor 3</label><input type="color" id="color3" value="#5b21b6"></div>
+            <div class="text-ctrl"><label>Iniciais</label><input type="text" id="initials" value="" placeholder="Ex: WP" maxlength="3"></div>
+        </div>
+        <div class="canvases">
+            <div class="canvas-wrap"><canvas id="c192" width="192" height="192"></canvas><span>192 × 192</span></div>
+            <div class="canvas-wrap"><canvas id="c512" width="512" height="512"></canvas><span>512 × 512</span></div>
+        </div>
+        <div class="actions">
+            <button class="btn btn-secondary" onclick="loadFromBranding()"><i class="fas fa-sync"></i> Carregar do Branding</button>
+            <a class="btn btn-primary" id="dl192"><i class="fas fa-download"></i> 192×192</a>
+            <a class="btn btn-primary" id="dl512"><i class="fas fa-download"></i> 512×512</a>
+        </div>
+        <div class="info">
+            <i class="fas fa-info-circle"></i>
+            Após baixar, coloque os arquivos na pasta <strong>icons/</strong> como <strong>icon-192.png</strong> e <strong>icon-512.png</strong>.
+            Ou defina uma URL de logo na <strong>Personalização do Admin</strong> para atualizar automaticamente.
+        </div>
+    </div>
+    <div class="toast" id="toast"></div>
+    <script>
+    ['bgColor','color1','color2','color3','initials'].forEach(id => {
+        document.getElementById(id).addEventListener('input', render);
+    });
+    function drawIcon(canvas, size) {
+        const ctx = canvas.getContext('2d');
+        const bg = document.getElementById('bgColor').value;
+        const c1 = document.getElementById('color1').value;
+        const c2 = document.getElementById('color2').value;
+        const c3 = document.getElementById('color3').value;
+        const initials = document.getElementById('initials').value.trim();
+        const r = size * 0.18;
+        ctx.clearRect(0, 0, size, size);
+        ctx.fillStyle = bg;
+        ctx.beginPath();
+        ctx.moveTo(r,0);ctx.lineTo(size-r,0);ctx.quadraticCurveTo(size,0,size,r);
+        ctx.lineTo(size,size-r);ctx.quadraticCurveTo(size,size,size-r,size);
+        ctx.lineTo(r,size);ctx.quadraticCurveTo(0,size,0,size-r);
+        ctx.lineTo(0,r);ctx.quadraticCurveTo(0,0,r,0);ctx.closePath();ctx.fill();
+        const grd = ctx.createRadialGradient(size*0.45,size*0.4,0,size*0.5,size*0.5,size*0.5);
+        grd.addColorStop(0, c2+'20');grd.addColorStop(1,'transparent');
+        ctx.fillStyle = grd;ctx.fillRect(0,0,size,size);
+        const grad = ctx.createLinearGradient(size*0.35,size*0.2,size*0.78,size*0.75);
+        grad.addColorStop(0,c1);grad.addColorStop(0.5,c2);grad.addColorStop(1,c3);
+        ctx.fillStyle = grad;ctx.shadowColor = c2;ctx.shadowBlur = size*0.08;
+        ctx.beginPath();ctx.moveTo(size*0.36,size*0.22);ctx.lineTo(size*0.36,size*0.78);ctx.lineTo(size*0.8,size*0.5);ctx.closePath();ctx.fill();
+        ctx.shadowBlur = 0;
+        if (initials) {
+            ctx.fillStyle = c1;ctx.font = 'bold '+(size*0.12)+'px "Inter",sans-serif';
+            ctx.textAlign = 'center';ctx.textBaseline = 'bottom';
+            ctx.fillText(initials, size/2, size*0.95);
+        }
+        return canvas.toDataURL('image/png');
+    }
+    function render() {
+        const d192 = drawIcon(document.getElementById('c192'),192);
+        const d512 = drawIcon(document.getElementById('c512'),512);
+        const dl192 = document.getElementById('dl192');dl192.href=d192;dl192.download='icon-192.png';
+        const dl512 = document.getElementById('dl512');dl512.href=d512;dl512.download='icon-512.png';
+    }
+    async function loadFromBranding(){
+        try{
+            const r = await fetch('api/admin_api.php?action=public_branding');
+            const b = await r.json();
+            if(b.primary_color) document.getElementById('color2').value = b.primary_color;
+            if(b.secondary_color) document.getElementById('color1').value = b.secondary_color;
+            if(b.accent_color) document.getElementById('color3').value = b.accent_color;
+            if(b.app_name){
+                const w = b.app_name.trim().split(/\s+/);
+                document.getElementById('initials').value = w.length>=2 ? (w[0][0]+w[1][0]).toUpperCase() : b.app_name.substring(0,2).toUpperCase();
+            }
+            render();showToast('Cores carregadas do branding!');
+        }catch(e){showToast('Erro ao carregar branding');}
+    }
+    function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
+    render();
+    </script>
+</body>
+</html>

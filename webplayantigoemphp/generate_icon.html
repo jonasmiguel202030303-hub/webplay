@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Gerador de Ícone WebPlay</title>
+    <style>
+        body { margin: 0; padding: 20px; font-family: Arial; background: #111; color: #fff; }
+        #canvas { border: 2px solid #333; margin: 20px 0; }
+        button { padding: 10px 20px; margin: 5px; background: #2563eb; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #3b82f6; }
+        .size-select { margin: 10px 0; }
+        select { padding: 5px; background: #333; color: white; border: 1px solid #555; }
+    </style>
+</head>
+<body>
+    <h1>Gerador de Ícone WebPlay</h1>
+    
+    <div class="size-select">
+        <label>Tamanho: </label>
+        <select id="sizeSelect" onchange="updateCanvas()">
+            <option value="192">192x192 (PWA)</option>
+            <option value="512">512x512 (PWA)</option>
+            <option value="180">180x180 (Apple)</option>
+            <option value="32">32x32 (Favicon)</option>
+        </select>
+    </div>
+    
+    <canvas id="canvas"></canvas><br>
+    
+    <button onclick="downloadIcon()">Download Ícone</button>
+    <button onclick="copyToClipboard()">Copiar Base64</button>
+    
+    <script>
+        function updateCanvas() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const size = parseInt(document.getElementById('sizeSelect').value);
+            
+            canvas.width = size;
+            canvas.height = size;
+            
+            // Fundo gradiente azul
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#1d4ed8');
+            gradient.addColorStop(0.5, '#2563eb');
+            gradient.addColorStop(1, '#3b82f6');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+            
+            // Círculo interno mais escuro
+            const center = size / 2;
+            const radius = size * 0.35;
+            
+            ctx.beginPath();
+            ctx.arc(center, center, radius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fill();
+            
+            // Triângulo de play (branco)
+            const playSize = size * 0.18;
+            const offsetX = size * 0.03; // Deslocar para direita
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.moveTo(center - playSize + offsetX, center - playSize);
+            ctx.lineTo(center + playSize + offsetX, center);
+            ctx.lineTo(center - playSize + offsetX, center + playSize);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Borda sutil
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(0, 0, size, size);
+        }
+        
+        function downloadIcon() {
+            const canvas = document.getElementById('canvas');
+            const size = document.getElementById('sizeSelect').value;
+            const link = document.createElement('a');
+            link.download = `webplay-icon-${size}x${size}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        function copyToClipboard() {
+            const canvas = document.getElementById('canvas');
+            const dataUrl = canvas.toDataURL();
+            navigator.clipboard.writeText(dataUrl).then(() => {
+                alert('Base64 copiado!');
+            });
+        }
+        
+        // Inicializar
+        updateCanvas();
+    </script>
+</body>
+</html>

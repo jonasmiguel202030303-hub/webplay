@@ -1,0 +1,180 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Tema padrão (WebPlay). As páginas de cada assinante substituem estes valores via utils/theme.js. */
+  --c-primary: 124 58 237;
+  --c-secondary: 37 99 235;
+  --c-button: 124 58 237;
+  --c-on-button: 255 255 255;
+  --c-bg: 5 5 5;
+  --c-fg: 255 255 255;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  @apply bg-bg font-sans text-fg antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--c-fg) / 0.25) transparent;
+}
+
+:focus-visible {
+  outline: 2px solid rgb(var(--c-primary));
+  outline-offset: 2px;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex min-h-[40px] items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply bg-button text-on-button hover:brightness-110 active:brightness-95;
+  }
+  .btn-secondary {
+    @apply border border-fg/15 bg-fg/5 text-fg hover:bg-fg/10;
+  }
+  .btn-ghost {
+    @apply text-fg/80 hover:bg-fg/10 hover:text-fg;
+  }
+  .btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-500;
+  }
+  .btn-sm {
+    @apply min-h-[32px] px-3 py-1 text-xs;
+  }
+  .btn-lg {
+    @apply min-h-[48px] px-6 py-2.5 text-base;
+  }
+  .btn-icon {
+    @apply min-h-[40px] min-w-[40px] rounded-full p-2;
+  }
+
+  .input {
+    @apply w-full rounded-lg border border-fg/15 bg-fg/5 px-3 py-2 text-sm text-fg placeholder:text-fg/40 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-60;
+  }
+  .label {
+    @apply mb-1 block text-sm font-medium text-fg/80;
+  }
+  .hint {
+    @apply mt-1 text-xs text-fg/50;
+  }
+  .field-error {
+    @apply mt-1 text-xs text-red-400;
+  }
+
+  .card {
+    @apply rounded-xl border border-fg/10 bg-fg/[0.04] p-5;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .table-wrap {
+    @apply overflow-x-auto rounded-xl border border-fg/10;
+  }
+  .table {
+    @apply w-full min-w-[640px] text-left text-sm;
+  }
+  .table th {
+    @apply whitespace-nowrap bg-fg/5 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-fg/60;
+  }
+  .table td {
+    @apply border-t border-fg/10 px-4 py-3 align-top;
+  }
+}
+
+/* Landing pública */
+.gradient-text {
+  @apply bg-gradient-to-r from-violet-400 via-primary to-sky-400 bg-clip-text text-transparent;
+}
+.lp-eyebrow {
+  @apply inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-violet-200;
+}
+.lp-card {
+  @apply relative rounded-2xl border border-fg/10 bg-gradient-to-b from-fg/[0.06] to-fg/[0.02] p-6 transition duration-300 hover:-translate-y-1 hover:border-primary/40;
+}
+.lp-card:hover {
+  box-shadow: 0 0 40px -12px rgb(var(--c-primary) / 0.55);
+}
+.lp-icon {
+  @apply flex h-11 w-11 items-center justify-center rounded-xl border border-primary/30 bg-gradient-to-br from-primary/30 to-secondary/20 text-violet-200;
+}
+.btn-glow {
+  box-shadow: 0 8px 30px -8px rgb(var(--c-primary) / 0.7);
+}
+.btn-glow:hover {
+  box-shadow: 0 10px 40px -6px rgb(var(--c-primary) / 0.9);
+}
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  transition-delay: var(--d, 0ms);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+.float-y {
+  animation: float-y 6s ease-in-out infinite;
+}
+
+.skeleton {
+  @apply relative overflow-hidden rounded-lg bg-fg/10;
+}
+.skeleton::after {
+  content: '';
+  @apply absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-fg/10 to-transparent;
+  transform: translateX(-100%);
+}
+
+/* Opções de <select> seguem o tema (evita texto claro sobre fundo claro nas listas nativas). */
+select option {
+  background-color: rgb(var(--c-bg));
+  color: rgb(var(--c-fg));
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+  .float-y {
+    animation: none;
+  }
+}

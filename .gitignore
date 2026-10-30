@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+backend/storage/
+*.log
+.DS_Store
+backups/
+*.sql.gz

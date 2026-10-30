@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+    <title>WebPlay - Entrar</title>
+    <!-- PWA -->
+    <link rel="manifest" href="api/admin_api.php?action=manifest">
+    <meta name="theme-color" content="#050509">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="WebPlay">
+    <link rel="apple-touch-icon" href="api/admin_api.php?action=favicon">
+    <link rel="icon" href="api/admin_api.php?action=favicon">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+    <!-- Netflix-style Poster Wall Background -->
+    <div class="poster-wall" id="posterWall">
+        <div class="poster-wall-inner" id="posterWallInner"></div>
+        <div class="poster-wall-overlay"></div>
+    </div>
+
+    <!-- Brand Name — Top Left -->
+    <div class="nf-brand-top">
+        <span class="brand-name-login">WebPlay</span>
+    </div>
+
+    <!-- Login Centered -->
+    <div class="nf-login-wrapper">
+        <div class="nf-login-card">
+            <h1 class="nf-login-title">Entrar</h1>
+
+            <form id="loginForm" class="nf-login-form">
+                <div class="nf-input-wrap">
+                    <input type="text" id="username" class="nf-input" placeholder="Usuário ou E-mail" autocomplete="off" required>
+                </div>
+                <div class="nf-input-wrap">
+                    <input type="password" id="password" class="nf-input" placeholder="Senha" required>
+                    <button type="button" class="nf-toggle-pw" id="togglePassword">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+
+                <button type="submit" class="nf-btn-primary" id="btnConnect">
+                    <span class="btn-text"><i class="fas fa-sign-in-alt"></i> Entrar</span>
+                    <span class="btn-loading" style="display:none;">
+                        <div class="btn-spinner"></div> Conectando...
+                    </span>
+                </button>
+
+                <!-- Connection Progress -->
+                <div class="connection-progress" id="connectionProgress" style="display:none;">
+                    <div class="connection-progress-bar"></div>
+                    <div class="connection-status" id="connectionStatus">Testando servidores...</div>
+                </div>
+
+                <!-- Error -->
+                <div class="error-message" id="errorMessage" style="display:none;">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span id="errorText"></span>
+                </div>
+
+                <div class="nf-login-options">
+                    <label class="nf-remember">
+                        <input type="checkbox" id="rememberMe" checked>
+                        <span class="nf-check"></span>
+                        Lembrar-me
+                    </label>
+                </div>
+            </form>
+
+            <!-- Signup -->
+            <p class="nf-signup-text" id="signupLine" style="display:none;">Novo por aqui? <a href="#" id="signupLink" target="_blank"><strong>Crie uma conta agora</strong></a></p>
+
+            <!-- WhatsApp Help Line -->
+            <p class="nf-help-line" id="loginWhatsappLine" style="display:none;">
+                <i class="fab fa-whatsapp"></i> Precisa de ajuda? <span id="loginWhatsappNum"></span>
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="nf-login-footer">
+            <a href="velocidade/"><i class="fas fa-tachometer-alt"></i> Speed Test</a>
+            <span class="nf-sep">•</span>
+            <a href="admin/"><i class="fas fa-shield-halved"></i> Admin</a>
+        </div>
+    </div>
+
+    <!-- WhatsApp Floating Button -->
+    <a href="#" id="whatsappFloat" class="whatsapp-float" target="_blank" style="display:none;">
+        <i class="fab fa-whatsapp"></i>
+        <span class="whatsapp-tooltip">Ajuda</span>
+    </a>
+
+    <!-- Modal Credenciais Inválidas -->
+    <div class="expired-modal-overlay" id="wrongCredModalOverlay" style="display:none;">
+        <div class="expired-modal">
+            <button class="expired-modal-close" id="wrongCredModalClose" title="Fechar">&times;</button>
+            <div class="expired-modal-icon" style="background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.25)">
+                <i class="fas fa-user-xmark" style="color:#f59e0b"></i>
+            </div>
+            <h2 class="expired-modal-title">Usuário ou senha incorretos</h2>
+            <p class="expired-modal-desc">Não conseguimos encontrar uma conta com esses dados. Verifique suas credenciais ou entre em contato com o suporte para obter ajuda.</p>
+            <button class="expired-modal-btn-secondary" id="wrongCredCloseBtn">Fechar</button>
+        </div>
+    </div>
+
+    <!-- Modal Conta Expirada -->
+    <div class="expired-modal-overlay" id="expiredModalOverlay" style="display:none;">
+        <div class="expired-modal">
+            <button class="expired-modal-close" id="expiredModalClose" title="Fechar">&times;</button>
+            <div class="expired-modal-icon">
+                <i class="fas fa-calendar-xmark"></i>
+            </div>
+            <h2 class="expired-modal-title">Sua conta expirou</h2>
+            <p class="expired-modal-desc">Seu plano de acesso chegou ao fim. Renove agora para continuar aproveitando todo o conteúdo.</p>
+            <div class="expired-modal-date" id="expiredModalDate"></div>
+            <button class="expired-modal-btn" id="expiredModalRenew">
+                <i class="fas fa-rotate"></i> Renovar Assinatura
+            </button>
+            <button class="expired-modal-btn-secondary" id="expiredModalCloseBtn">Fechar</button>
+        </div>
+    </div>
+
+    <script>
+    // ====== Netflix Poster Wall ======
+    (async function loadPosterWall() {
+        try {
+            const r = await fetch('api/admin_api.php?action=tmdb_backdrops');
+            if (!r.ok) return;
+            const data = await r.json();
+            const posters = data.posters || [];
+            if (!posters.length) return;
+            const inner = document.getElementById('posterWallInner');
+            if (!inner) return;
+            const vw = window.innerWidth, vh = window.innerHeight;
+            const cardW = vw <= 480 ? 80 : vw <= 768 ? 100 : 150;
+            const cardH = vw <= 480 ? 120 : vw <= 768 ? 150 : 225;
+            const cols = Math.ceil(vw / cardW) + 1;
+            const rows = Math.ceil(vh / cardH) + 1;
+            const total = cols * rows;
+            let html = '';
+            for (let i = 0; i < total; i++) {
+                const p = posters[i % posters.length];
+                html += '<div class="poster-card"><img src="' + p.poster + '" alt="' + (p.title || '') + '" loading="lazy"></div>';
+            }
+            inner.innerHTML = html;
+            document.getElementById('posterWall').classList.add('loaded');
+        } catch(e) {}
+    })();
+
+    // ====== Branding Loader ======
+    (async function loadBranding() {
+        try {
+            const r = await fetch('api/admin_api.php?action=public_branding');
+            if (!r.ok) return;
+            const b = await r.json();
+            const name = b.app_name || 'WebPlay';
+            const logoUrl = b.logo_url || '';
+            const p = b.primary_color || '#7c3aed';
+            const s = b.secondary_color || '#a855f7';
+            const a = b.accent_color || '#5b21b6';
+
+            // Nome
+            document.title = name + ' - Entrar';
+            document.querySelectorAll('.brand-name-login').forEach(el => el.textContent = name);
+
+            // Cores CSS
+            const root = document.documentElement;
+            root.style.setProperty('--purple', p);
+            root.style.setProperty('--blue', s);
+            root.style.setProperty('--purple-glow', p + '40');
+            root.style.setProperty('--gradient', `linear-gradient(135deg,${a} 0%,${p} 100%)`);
+            root.style.setProperty('--btn-gradient', `linear-gradient(135deg,${a} 0%,${p} 50%,${s} 100%)`);
+
+            // Cores avançadas
+            if (b.bg_primary) root.style.setProperty('--bg-primary', b.bg_primary);
+            if (b.bg_secondary) root.style.setProperty('--bg-secondary', b.bg_secondary);
+            if (b.bg_card) root.style.setProperty('--bg-card', b.bg_card);
+            if (b.text_color) root.style.setProperty('--text', b.text_color);
+            if (b.text_secondary) root.style.setProperty('--text-sec', b.text_secondary);
+            if (b.border_color) root.style.setProperty('--border', b.border_color);
+
+            // Favicon + PWA
+            const iconSrc = logoUrl || ('icons/icon-192.png?v=' + Date.now());
+            const fav = document.querySelector('link[rel="icon"]');
+            if (fav) fav.href = iconSrc;
+            const apple = document.querySelector('link[rel="apple-touch-icon"]');
+            if (apple) apple.href = iconSrc;
+            const metaTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+            if (metaTitle) metaTitle.content = name;
+
+            // Signup (Criar Conta)
+            if (b.signup_enabled && b.whatsapp_number) {
+                const sNum = b.whatsapp_number.replace(/\D/g, '');
+                const sMsg = encodeURIComponent(b.signup_message || 'Olá! Quero criar uma conta');
+                const signupLine = document.getElementById('signupLine');
+                const signupLink = document.getElementById('signupLink');
+                if (signupLine && signupLink) {
+                    signupLink.href = `https://wa.me/${sNum}?text=${sMsg}`;
+                    signupLine.style.display = 'block';
+                }
+            }
+
+            // WhatsApp
+            if (b.whatsapp_enabled && b.whatsapp_number) {
+                const num = b.whatsapp_number.replace(/\D/g, '');
+                const msg = encodeURIComponent(b.whatsapp_message || 'Olá! Preciso de ajuda');
+                // Float button
+                const waBtn = document.getElementById('whatsappFloat');
+                if (waBtn) { waBtn.href = `https://wa.me/${num}?text=${msg}`; waBtn.style.display = 'flex'; }
+                // In-card help line
+                const helpLine = document.getElementById('loginWhatsappLine');
+                const helpNum = document.getElementById('loginWhatsappNum');
+                if (helpLine && helpNum) {
+                    helpNum.textContent = '+' + num;
+                    helpLine.style.display = 'flex';
+                    helpLine.style.cursor = 'pointer';
+                    helpLine.onclick = () => window.open(`https://wa.me/${num}?text=${msg}`, '_blank');
+                }
+            }
+        } catch {}
+    })();
+    </script>
+    <script src="js/app.js"></script>
+</body>
+</html>

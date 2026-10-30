@@ -1,0 +1,27 @@
+{
+  "name": "webplay-brasil",
+  "version": "1.0.0",
+  "private": true,
+  "description": "WebPlay Brasil — plataforma SaaS white label de webplayers. Desenvolvido por Lumo Tecnologia.",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:backend": "npm run dev -w backend",
+    "dev:frontend": "npm run dev -w frontend",
+    "dev:mock-source": "npm run mock-source -w backend",
+    "migrate": "npm run migrate -w backend",
+    "seed:dev": "npm run seed:dev -w backend",
+    "build": "npm run build -w frontend",
+    "start": "npm run start -w backend",
+    "test": "npm run test -w backend && npm run test -w frontend",
+    "test:backend": "npm run test -w backend",
+    "test:frontend": "npm run test -w frontend",
+    "loadtest": "npm run loadtest -w backend"
+  }
+}

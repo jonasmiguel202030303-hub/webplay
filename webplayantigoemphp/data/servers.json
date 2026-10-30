@@ -1,0 +1,44 @@
+[
+    {
+        "id": "srv_infinityplay",
+        "url": "http:\/\/i2n.my.id",
+        "name": "Infinity Play",
+        "enabled": true,
+        "created_at": "2026-03-11 00:00:01"
+    },
+    {
+        "id": "srv_ultraplay",
+        "url": "http:\/\/uplay.bond",
+        "name": "Ultra Play",
+        "enabled": true,
+        "created_at": "2026-03-11 00:00:02"
+    },
+    {
+        "id": "srv_megaplay",
+        "url": "http:\/\/m2n.my.id",
+        "name": "Mega Play",
+        "enabled": true,
+        "created_at": "2026-03-11 00:00:03"
+    },
+    {
+        "id": "srv_gigaplay",
+        "url": "http:\/\/g2n.my.id",
+        "name": "Giga Play",
+        "enabled": true,
+        "created_at": "2026-03-11 00:00:04"
+    },
+    {
+        "id": "srv_wolf",
+        "url": "http:\/\/w2n.my.id",
+        "name": "WOLF",
+        "enabled": true,
+        "created_at": "2026-03-11 00:00:05"
+    },
+    {
+        "id": "srv_69dbde04f0358",
+        "url": "http:\/\/lumotv.site",
+        "name": "LUMO TV",
+        "enabled": true,
+        "created_at": "2026-04-12 18:01:40"
+    }
+]

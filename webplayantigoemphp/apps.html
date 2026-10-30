@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Store — WebPlay</title>
+    <link rel="icon" href="icons/icon-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        :root{
+            --bg-primary:#050509;
+            --bg-card:rgba(255,255,255,0.04);
+            --bg-card-hover:rgba(255,255,255,0.07);
+            --border:rgba(255,255,255,0.08);
+            --border-hover:rgba(255,255,255,0.15);
+            --text:#e2e8f0;
+            --text-secondary:#94a3b8;
+            --text-muted:#64748b;
+            --accent:#7c3aed;
+            --accent-soft:rgba(124,58,237,0.15);
+            --success:#10b981;
+            --radius:16px;
+            --radius-sm:10px;
+        }
+        html{scroll-behavior:smooth}
+        body{
+            font-family:'Inter',system-ui,-apple-system,sans-serif;
+            background:var(--bg-primary);
+            color:var(--text);
+            min-height:100vh;
+            line-height:1.6;
+            overflow-x:hidden;
+        }
+
+        /* ── Background ── */
+        .bg-grid{position:fixed;inset:0;z-index:0;background-image:
+            linear-gradient(rgba(124,58,237,0.03) 1px,transparent 1px),
+            linear-gradient(90deg,rgba(124,58,237,0.03) 1px,transparent 1px);
+            background-size:60px 60px;pointer-events:none}
+        .bg-glow{position:fixed;z-index:0;border-radius:50%;filter:blur(120px);pointer-events:none;opacity:.25}
+        .bg-glow-1{width:600px;height:600px;background:radial-gradient(circle,#7c3aed 0%,transparent 70%);top:-200px;left:-100px}
+        .bg-glow-2{width:500px;height:500px;background:radial-gradient(circle,#a855f7 0%,transparent 70%);bottom:-150px;right:-100px}
+
+        /* ── Container ── */
+        .store-container{
+            position:relative;z-index:1;
+            max-width:1100px;margin:0 auto;
+            padding:40px 24px 60px;
+        }
+
+        /* ── Header ── */
+        .store-header{text-align:center;margin-bottom:48px}
+        .store-logo{
+            width:72px;height:72px;border-radius:20px;
+            background:linear-gradient(135deg,var(--accent),#a855f7);
+            display:inline-flex;align-items:center;justify-content:center;
+            font-size:32px;color:#fff;margin-bottom:16px;
+            box-shadow:0 8px 32px rgba(124,58,237,0.3);
+        }
+        .store-title{
+            font-size:clamp(1.8rem,4vw,2.6rem);font-weight:800;
+            background:linear-gradient(135deg,#fff 30%,#a78bfa);
+            -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+            background-clip:text;
+        }
+        .store-subtitle{
+            color:var(--text-secondary);font-size:1rem;
+            margin-top:8px;max-width:500px;margin-inline:auto;
+        }
+
+        /* ── Stats Bar ── */
+        .stats-bar{
+            display:flex;justify-content:center;gap:32px;
+            margin-bottom:40px;flex-wrap:wrap;
+        }
+        .stat-pill{
+            display:flex;align-items:center;gap:8px;
+            background:var(--bg-card);border:1px solid var(--border);
+            padding:10px 20px;border-radius:100px;
+            font-size:.875rem;color:var(--text-secondary);
+        }
+        .stat-pill i{color:var(--accent);font-size:1rem}
+        .stat-pill strong{color:var(--text);font-weight:700}
+
+        /* ── Search ── */
+        .search-bar{
+            max-width:480px;margin:0 auto 40px;position:relative;
+        }
+        .search-bar input{
+            width:100%;padding:14px 20px 14px 48px;
+            background:var(--bg-card);border:1px solid var(--border);
+            border-radius:100px;color:var(--text);font-size:.95rem;
+            font-family:inherit;outline:none;
+            transition:border-color .3s,box-shadow .3s;
+        }
+        .search-bar input:focus{
+            border-color:var(--accent);
+            box-shadow:0 0 0 3px var(--accent-soft);
+        }
+        .search-bar input::placeholder{color:var(--text-muted)}
+        .search-bar i{
+            position:absolute;left:18px;top:50%;transform:translateY(-50%);
+            color:var(--text-muted);font-size:1rem;
+        }
+
+        /* ── Platform Filter ── */
+        .platform-filter{
+            display:flex;justify-content:center;gap:8px;
+            margin-bottom:36px;flex-wrap:wrap;
+        }
+        .filter-btn{
+            padding:8px 18px;border-radius:100px;
+            background:var(--bg-card);border:1px solid var(--border);
+            color:var(--text-secondary);font-size:.8rem;font-weight:600;
+            cursor:pointer;transition:all .3s;font-family:inherit;
+            display:flex;align-items:center;gap:6px;
+        }
+        .filter-btn:hover{border-color:var(--border-hover);color:var(--text)}
+        .filter-btn.active{
+            background:var(--accent);border-color:var(--accent);color:#fff;
+        }
+
+        /* ── Apps Grid ── */
+        .apps-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+            gap:20px;
+        }
+
+        /* ── App Card ── */
+        .app-card{
+            background:var(--bg-card);
+            border:1px solid var(--border);
+            border-radius:var(--radius);
+            overflow:hidden;
+            transition:all .3s ease;
+        }
+        .app-card:hover{
+            border-color:var(--border-hover);
+            transform:translateY(-4px);
+            box-shadow:0 12px 40px rgba(0,0,0,0.4);
+        }
+        .app-card-header{
+            display:flex;align-items:center;gap:14px;
+            padding:20px 20px 0;
+        }
+        .app-icon{
+            width:56px;height:56px;border-radius:14px;
+            background:linear-gradient(135deg,var(--accent),#a855f7);
+            display:flex;align-items:center;justify-content:center;
+            font-size:24px;color:#fff;flex-shrink:0;
+            overflow:hidden;
+        }
+        .app-icon img{width:100%;height:100%;object-fit:cover}
+        .app-info{flex:1;min-width:0}
+        .app-name{font-size:1.05rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .app-version{font-size:.75rem;color:var(--text-muted);margin-top:2px}
+        .app-card-body{padding:14px 20px}
+        .app-desc{
+            font-size:.85rem;color:var(--text-secondary);
+            display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;
+            overflow:hidden;line-height:1.5;min-height:40px;
+        }
+        .app-meta{
+            display:flex;gap:16px;margin-top:12px;
+            font-size:.78rem;color:var(--text-muted);flex-wrap:wrap;
+        }
+        .app-meta span{display:flex;align-items:center;gap:5px}
+        .app-meta i{font-size:.72rem}
+        .platform-tag{
+            padding:3px 10px;border-radius:100px;
+            font-size:.7rem;font-weight:700;text-transform:uppercase;
+            letter-spacing:.5px;
+        }
+        .platform-tag.android{background:rgba(16,185,129,0.15);color:#34d399}
+        .platform-tag.android-tv{background:rgba(59,130,246,0.15);color:#60a5fa}
+        .platform-tag.firestick{background:rgba(251,146,60,0.15);color:#fb923c}
+        .platform-tag.windows{background:rgba(6,182,212,0.15);color:#22d3ee}
+        .platform-tag.ios{background:rgba(168,85,247,0.15);color:#c084fc}
+        .platform-tag.other{background:rgba(148,163,184,0.15);color:#94a3b8}
+
+        .app-card-footer{
+            padding:14px 20px 20px;
+            display:flex;gap:10px;
+        }
+        .btn-download{
+            flex:1;padding:12px;border:none;border-radius:var(--radius-sm);
+            background:linear-gradient(135deg,var(--accent),#a855f7);
+            color:#fff;font-size:.88rem;font-weight:700;cursor:pointer;
+            display:flex;align-items:center;justify-content:center;gap:8px;
+            font-family:inherit;transition:all .3s;
+        }
+        .btn-download:hover{
+            transform:scale(1.02);
+            box-shadow:0 6px 24px rgba(124,58,237,0.4);
+        }
+        .btn-copy{
+            padding:12px 16px;border:1px solid var(--border);
+            border-radius:var(--radius-sm);background:var(--bg-card);
+            color:var(--text-secondary);cursor:pointer;
+            font-size:.88rem;transition:all .3s;
+        }
+        .btn-copy:hover{border-color:var(--border-hover);color:var(--text)}
+
+        /* ── Empty State ── */
+        .empty-state{
+            text-align:center;padding:80px 20px;
+            grid-column:1/-1;
+        }
+        .empty-state i{font-size:4rem;color:var(--text-muted);margin-bottom:16px}
+        .empty-state h3{font-size:1.2rem;font-weight:700;color:var(--text-secondary);margin-bottom:8px}
+        .empty-state p{color:var(--text-muted);font-size:.9rem}
+
+        /* ── Loading ── */
+        .loading-state{
+            grid-column:1/-1;text-align:center;padding:60px;
+        }
+        .spinner{
+            width:40px;height:40px;border:3px solid var(--border);
+            border-top-color:var(--accent);border-radius:50%;
+            animation:spin .8s linear infinite;
+            margin:0 auto 16px;
+        }
+        @keyframes spin{to{transform:rotate(360deg)}}
+
+        /* ── Footer ── */
+        .store-footer{
+            text-align:center;margin-top:60px;
+            padding-top:24px;border-top:1px solid var(--border);
+        }
+        .store-footer p{font-size:.8rem;color:var(--text-muted)}
+        .store-footer a{
+            color:var(--accent);text-decoration:none;font-weight:600;
+        }
+        .store-footer a:hover{text-decoration:underline}
+        .back-link{
+            display:inline-flex;align-items:center;gap:8px;
+            color:var(--text-secondary);font-size:.85rem;
+            text-decoration:none;margin-top:12px;
+            transition:color .3s;
+        }
+        .back-link:hover{color:var(--accent)}
+
+        /* ── Toast ── */
+        .toast{
+            position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);
+            background:#1e1b4b;border:1px solid var(--accent);
+            color:#fff;padding:12px 24px;border-radius:var(--radius-sm);
+            font-size:.85rem;font-weight:500;z-index:9999;
+            opacity:0;transition:all .4s ease;pointer-events:none;
+            display:flex;align-items:center;gap:8px;
+        }
+        .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+        /* ── Responsive ── */
+        @media(max-width:768px){
+            .store-container{padding:24px 16px 40px}
+            .apps-grid{grid-template-columns:1fr}
+            .stats-bar{gap:12px}
+            .stat-pill{padding:8px 14px;font-size:.8rem}
+        }
+        @media(max-width:480px){
+            .store-header{margin-bottom:32px}
+            .store-logo{width:56px;height:56px;font-size:24px;border-radius:16px}
+            .platform-filter{gap:6px}
+            .filter-btn{padding:6px 12px;font-size:.75rem}
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+
+    <div class="store-container">
+        <!-- Header -->
+        <header class="store-header">
+            <div class="store-logo"><i class="fas fa-play"></i></div>
+            <h1 class="store-title" id="storeTitle">WebPlay Apps</h1>
+            <p class="store-subtitle">Baixe nossos aplicativos oficiais para todas as plataformas</p>
+        </header>
+
+        <!-- Stats -->
+        <div class="stats-bar" id="statsBar">
+            <div class="stat-pill"><i class="fas fa-box-open"></i> <strong id="statTotal">0</strong> Apps</div>
+            <div class="stat-pill"><i class="fas fa-download"></i> <strong id="statDownloads">0</strong> Downloads</div>
+            <div class="stat-pill"><i class="fas fa-mobile-alt"></i> <strong id="statPlatforms">0</strong> Plataformas</div>
+        </div>
+
+        <!-- Search -->
+        <div class="search-bar">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="Buscar aplicativo..." oninput="filterApps()">
+        </div>
+
+        <!-- Platform Filter -->
+        <div class="platform-filter" id="platformFilter">
+            <button class="filter-btn active" onclick="setFilter('all')" data-filter="all">
+                <i class="fas fa-globe"></i> Todos
+            </button>
+            <button class="filter-btn" onclick="setFilter('android')" data-filter="android">
+                <i class="fab fa-android"></i> Android
+            </button>
+            <button class="filter-btn" onclick="setFilter('android-tv')" data-filter="android-tv">
+                <i class="fas fa-tv"></i> Android TV
+            </button>
+            <button class="filter-btn" onclick="setFilter('firestick')" data-filter="firestick">
+                <i class="fas fa-fire"></i> Fire Stick
+            </button>
+            <button class="filter-btn" onclick="setFilter('windows')" data-filter="windows">
+                <i class="fab fa-windows"></i> Windows
+            </button>
+            <button class="filter-btn" onclick="setFilter('ios')" data-filter="ios">
+                <i class="fab fa-apple"></i> iOS
+            </button>
+        </div>
+
+        <!-- Apps Grid -->
+        <div class="apps-grid" id="appsGrid">
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <p style="color:var(--text-muted)">Carregando aplicativos...</p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="store-footer">
+            <p>&copy; <span id="footerYear">2026</span> <span id="footerBrand">WebPlay</span>. Todos os direitos reservados.</p>
+            <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Voltar ao WebPlay</a>
+        </footer>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+    // =============================================
+    //  WEBPLAY 2.0 — Public App Store
+    // =============================================
+    const API_BASE = 'api/admin_api.php';
+    let allApps = [];
+    let currentFilter = 'all';
+
+    // ── Init ──
+    document.addEventListener('DOMContentLoaded', () => {
+        loadBranding();
+        loadApps();
+        document.getElementById('footerYear').textContent = new Date().getFullYear();
+    });
+
+    // ── Load Branding ──
+    async function loadBranding() {
+        try {
+            const res = await fetch(API_BASE + '?action=public_branding');
+            const data = await res.json();
+            const name = data.app_name || 'WebPlay';
+            document.getElementById('storeTitle').textContent = name + ' Apps';
+            document.getElementById('footerBrand').textContent = name;
+            document.title = 'App Store — ' + name;
+
+            // Apply accent color if provided
+            if (data.primary_color) {
+                document.documentElement.style.setProperty('--accent', data.primary_color);
+            }
+        } catch(e) {
+            console.warn('[WEBPLAY] Branding não carregado', e);
+        }
+    }
+
+    // ── Load Apps ──
+    async function loadApps() {
+        try {
+            const res = await fetch(API_BASE + '?action=public_apps');
+            const data = await res.json();
+
+            if (data.success && data.apps) {
+                allApps = data.apps;
+                updateStats();
+                renderApps();
+            } else {
+                showEmpty('Nenhum app disponível ainda');
+            }
+        } catch(e) {
+            console.error('[WEBPLAY] Erro ao carregar apps', e);
+            showEmpty('Erro ao carregar aplicativos');
+        }
+    }
+
+    // ── Update Stats ──
+    function updateStats() {
+        document.getElementById('statTotal').textContent = allApps.length;
+        const totalDownloads = allApps.reduce((sum, a) => sum + (a.downloads || 0), 0);
+        document.getElementById('statDownloads').textContent = formatNumber(totalDownloads);
+        const platforms = new Set(allApps.map(a => a.platform));
+        document.getElementById('statPlatforms').textContent = platforms.size;
+    }
+
+    // ── Render Apps ──
+    function renderApps() {
+        const grid = document.getElementById('appsGrid');
+        let filtered = allApps;
+
+        // Platform filter
+        if (currentFilter !== 'all') {
+            filtered = filtered.filter(a => a.platform === currentFilter);
+        }
+
+        // Search filter
+        const search = document.getElementById('searchInput').value.toLowerCase().trim();
+        if (search) {
+            filtered = filtered.filter(a =>
+                (a.name || '').toLowerCase().includes(search) ||
+                (a.description || '').toLowerCase().includes(search) ||
+                (a.platform || '').toLowerCase().includes(search)
+            );
+        }
+
+        if (filtered.length === 0) {
+            grid.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-box-open"></i>
+                    <h3>${search || currentFilter !== 'all' ? 'Nenhum resultado encontrado' : 'Nenhum app disponível'}</h3>
+                    <p>${search ? 'Tente outro termo de busca' : 'Em breve novos aplicativos serão publicados'}</p>
+                </div>`;
+            return;
+        }
+
+        grid.innerHTML = filtered.map(app => {
+            const pf = getPlatformInfo(app.platform);
+            const iconHtml = app.icon
+                ? `<img src="${escapeHtml(app.icon)}" alt="${escapeHtml(app.name)}" onerror="this.style.display='none';this.parentElement.innerHTML='<i class=\\'fas fa-mobile-alt\\'></i>'">`
+                : `<i class="${pf.icon}"></i>`;
+
+            return `
+            <div class="app-card" data-platform="${app.platform}">
+                <div class="app-card-header">
+                    <div class="app-icon">${iconHtml}</div>
+                    <div class="app-info">
+                        <div class="app-name">${escapeHtml(app.name)}</div>
+                        <div class="app-version">${app.version ? 'v' + escapeHtml(app.version) : ''}</div>
+                    </div>
+                    <span class="platform-tag ${pf.cls}">${pf.label}</span>
+                </div>
+                <div class="app-card-body">
+                    <p class="app-desc">${escapeHtml(app.description || 'Sem descrição')}</p>
+                    <div class="app-meta">
+                        <span><i class="fas fa-hdd"></i> ${formatFileSize(app.file_size)}</span>
+                        <span><i class="fas fa-download"></i> ${formatNumber(app.downloads || 0)} downloads</span>
+                        <span><i class="fas fa-calendar-alt"></i> ${formatDate(app.updated_at || app.created_at)}</span>
+                    </div>
+                </div>
+                <div class="app-card-footer">
+                    <button class="btn-download" onclick="downloadApp('${app.id}', '${escapeHtml(app.download_url)}')">
+                        <i class="fas fa-download"></i> Baixar
+                    </button>
+                    <button class="btn-copy" onclick="copyLink('${escapeHtml(app.download_url)}')" title="Copiar link">
+                        <i class="fas fa-link"></i>
+                    </button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // ── Download & Track ──
+    function downloadApp(id, url) {
+        // Track download
+        fetch(API_BASE + '?action=track_download&app_id=' + encodeURIComponent(id)).catch(() => {});
+        
+        // Trigger download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        // Update local counter
+        const app = allApps.find(ap => ap.id === id);
+        if (app) app.downloads = (app.downloads || 0) + 1;
+        updateStats();
+
+        showToast('<i class="fas fa-check-circle"></i> Download iniciado!');
+    }
+
+    // ── Copy Link ──
+    function copyLink(url) {
+        navigator.clipboard.writeText(url).then(() => {
+            showToast('<i class="fas fa-check-circle"></i> Link copiado!');
+        }).catch(() => {
+            // Fallback
+            const inp = document.createElement('input');
+            inp.value = url; document.body.appendChild(inp);
+            inp.select(); document.execCommand('copy');
+            document.body.removeChild(inp);
+            showToast('<i class="fas fa-check-circle"></i> Link copiado!');
+        });
+    }
+
+    // ── Filter ──
+    function setFilter(platform) {
+        currentFilter = platform;
+        document.querySelectorAll('.filter-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.filter === platform);
+        });
+        renderApps();
+    }
+
+    function filterApps() {
+        renderApps();
+    }
+
+    // ── Helpers ──
+    function getPlatformInfo(p) {
+        const map = {
+            'android':    { icon: 'fab fa-android',  label: 'Android',    cls: 'android' },
+            'android-tv': { icon: 'fas fa-tv',       label: 'Android TV', cls: 'android-tv' },
+            'firestick':  { icon: 'fas fa-fire',     label: 'Fire Stick', cls: 'firestick' },
+            'windows':    { icon: 'fab fa-windows',  label: 'Windows',    cls: 'windows' },
+            'ios':        { icon: 'fab fa-apple',    label: 'iOS',        cls: 'ios' },
+            'other':      { icon: 'fas fa-box',      label: 'Outro',      cls: 'other' }
+        };
+        return map[p] || map['other'];
+    }
+
+    function formatFileSize(bytes) {
+        if (!bytes || bytes === 0) return '0 B';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let i = 0;
+        let size = bytes;
+        while (size >= 1024 && i < units.length - 1) { size /= 1024; i++; }
+        return size.toFixed(i > 0 ? 1 : 0) + ' ' + units[i];
+    }
+
+    function formatNumber(n) {
+        if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+        if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+        return n.toString();
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '';
+        try {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+        } catch { return dateStr; }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function showEmpty(msg) {
+        document.getElementById('appsGrid').innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-box-open"></i>
+                <h3>${msg}</h3>
+                <p>Em breve novos aplicativos serão publicados</p>
+            </div>`;
+    }
+
+    function showToast(html) {
+        const t = document.getElementById('toast');
+        t.innerHTML = html;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3000);
+    }
+    </script>
+</body>
+</html>

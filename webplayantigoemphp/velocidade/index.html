@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>WebPlay — Teste de Velocidade</title>
+    <meta name="theme-color" content="#050509">
+    <link rel="icon" href="../icons/icon-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/speedtest.css?v=2">
+</head>
+<body>
+    <!-- Background animado -->
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon"><i class="fas fa-play"></i></div>
+                <div class="logo-text">
+                    <span class="brand-name-speed">WebPlay</span>
+                </div>
+            </div>
+            <div class="header-badge">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Speed Test</span>
+            </div>
+        </header>
+
+        <!-- Gauge principal -->
+        <main class="main-content">
+            <div class="gauge-container">
+                <svg class="gauge-svg" viewBox="0 0 300 200" id="gaugeSvg">
+                    <!-- Arco de fundo -->
+                    <defs>
+                        <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#333;stop-opacity:1" />
+                            <stop offset="50%" style="stop-color:#888;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#fff;stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="activeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#22c55e;stop-opacity:1" />
+                            <stop offset="40%" style="stop-color:#3b82f6;stop-opacity:1" />
+                            <stop offset="70%" style="stop-color:#a855f7;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#ef4444;stop-opacity:1" />
+                        </linearGradient>
+                        <filter id="glowFilter">
+                            <feGaussianBlur stdDeviation="3" result="blur"/>
+                            <feMerge>
+                                <feMergeNode in="blur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                        <filter id="strongGlow">
+                            <feGaussianBlur stdDeviation="6" result="blur"/>
+                            <feMerge>
+                                <feMergeNode in="blur"/>
+                                <feMergeNode in="blur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    
+                    <!-- Marcações de escala -->
+                    <g id="scaleTicks" class="scale-ticks"></g>
+                    
+                    <!-- Arco de fundo -->
+                    <path id="bgArc" class="gauge-bg" fill="none" stroke="#1a1a1a" stroke-width="12" stroke-linecap="round"/>
+                    
+                    <!-- Arco ativo -->
+                    <path id="activeArc" class="gauge-active" fill="none" stroke="url(#activeGrad)" stroke-width="12" stroke-linecap="round" filter="url(#glowFilter)"/>
+                    
+                    <!-- Ponteiro -->
+                    <g id="needle" class="gauge-needle" transform="rotate(-225, 150, 150)">
+                        <line x1="150" y1="150" x2="150" y2="50" stroke="#fff" stroke-width="2.5" stroke-linecap="round" filter="url(#strongGlow)"/>
+                        <circle cx="150" cy="150" r="8" fill="#111" stroke="#555" stroke-width="2"/>
+                        <circle cx="150" cy="150" r="4" fill="#fff"/>
+                    </g>
+
+                    <!-- Labels da escala -->
+                    <g id="scaleLabels" class="scale-labels"></g>
+                </svg>
+
+                <!-- Valor central -->
+                <div class="gauge-value-box">
+                    <div class="gauge-value" id="speedValue">0</div>
+                    <div class="gauge-unit">Mbps</div>
+                </div>
+            </div>
+
+            <!-- Botão de iniciar -->
+            <button class="start-btn" id="startBtn" onclick="startTest()">
+                <div class="start-btn-inner">
+                    <i class="fas fa-play" id="btnIcon"></i>
+                    <span id="btnText">INICIAR</span>
+                </div>
+                <div class="start-btn-ring"></div>
+            </button>
+
+            <!-- Status -->
+            <div class="status-text" id="statusText">Pressione INICIAR para testar sua conexão</div>
+
+            <!-- Cards de resultado -->
+            <div class="results-grid">
+                <div class="result-card" id="downloadCard">
+                    <div class="result-icon download">
+                        <i class="fas fa-arrow-down"></i>
+                    </div>
+                    <div class="result-info">
+                        <div class="result-label">DOWNLOAD</div>
+                        <div class="result-value">
+                            <span id="downloadValue">—</span>
+                            <span class="result-unit">Mbps</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="result-card" id="uploadCard">
+                    <div class="result-icon upload">
+                        <i class="fas fa-arrow-up"></i>
+                    </div>
+                    <div class="result-info">
+                        <div class="result-label">UPLOAD</div>
+                        <div class="result-value">
+                            <span id="uploadValue">—</span>
+                            <span class="result-unit">Mbps</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="result-card" id="pingCard">
+                    <div class="result-icon ping">
+                        <i class="fas fa-signal"></i>
+                    </div>
+                    <div class="result-info">
+                        <div class="result-label">PING</div>
+                        <div class="result-value">
+                            <span id="pingValue">—</span>
+                            <span class="result-unit">ms</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="result-card" id="jitterCard">
+                    <div class="result-icon jitter">
+                        <i class="fas fa-wave-square"></i>
+                    </div>
+                    <div class="result-info">
+                        <div class="result-label">JITTER</div>
+                        <div class="result-value">
+                            <span id="jitterValue">—</span>
+                            <span class="result-unit">ms</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info do servidor -->
+            <div class="server-info" id="serverInfo">
+                <div class="server-row">
+                    <i class="fas fa-globe"></i>
+                    <span id="ipAddress">Detectando IP...</span>
+                </div>
+                <div class="server-row">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span id="ispInfo">Detectando provedor...</span>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <a href="../" class="footer-back"><i class="fas fa-arrow-left"></i> Voltar ao WebPlay</a>
+            <span class="footer-copy">© 2026 — Teste de Velocidade</span>
+        </footer>
+    </div>
+
+    <script>
+    // White-label branding — Full Color Support
+    (async function(){
+        try {
+            const r = await fetch('../api/admin_api.php?action=public_branding');
+            if(!r.ok) return;
+            const b = await r.json();
+            const name = b.app_name || 'WebPlay';
+            const logoUrl = b.logo_url || '';
+            const p = b.primary_color || '#7c3aed';
+            const s = b.secondary_color || '#a855f7';
+            const a = b.accent_color || '#5b21b6';
+            // Nome
+            document.querySelectorAll('.brand-name-speed').forEach(el => el.textContent = name);
+            document.title = name + ' — Teste de Velocidade';
+            // Footer
+            const footerBack = document.querySelector('.footer-back');
+            if (footerBack) footerBack.innerHTML = '<i class="fas fa-arrow-left"></i> Voltar ao ' + name;
+            // Logo icon
+            const logoIcon = document.querySelector('.logo-icon');
+            if (logoIcon && logoUrl) {
+                logoIcon.innerHTML = '<img src="' + logoUrl + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" onerror="this.remove();this.parentElement.innerHTML=\'<i class=fas fa-play></i>\'">';
+            }
+            // Favicon
+            const iconSrc = logoUrl ? logoUrl : ('../icons/icon-192.png?v=' + Date.now());
+            const fav = document.querySelector('link[rel="icon"]');
+            if (fav) fav.href = iconSrc;
+            // Cores CSS
+            const root = document.documentElement;
+            root.style.setProperty('--accent', p);
+            root.style.setProperty('--accent-glow', p + '50');
+            root.style.setProperty('--accent-dark', a);
+            root.style.setProperty('--accent-light', s);
+            root.style.setProperty('--gradient', 'linear-gradient(135deg,' + a + ' 0%,' + p + ' 100%)');
+            root.style.setProperty('--btn-gradient', 'linear-gradient(135deg,' + a + ' 0%,' + p + ' 50%,' + s + ' 100%)');
+            // Glow backgrounds
+            const glow1 = document.querySelector('.bg-glow-1');
+            if (glow1) glow1.style.background = 'radial-gradient(circle,' + p + ',transparent 70%)';
+            const glow2 = document.querySelector('.bg-glow-2');
+            if (glow2) glow2.style.background = 'radial-gradient(circle,' + s + ',transparent 70%)';
+        } catch{}
+    })();
+    </script>
+    <script src="js/speedtest.js"></script>
+</body>
+</html>

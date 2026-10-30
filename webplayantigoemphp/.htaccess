@@ -1,0 +1,44 @@
+# WEBPLAY - Configuração para Hostinger
+# Coloque este arquivo na pasta public_html
+
+# Ativar rewrite engine
+RewriteEngine On
+
+# Forçar HTTPS
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Página 404 personalizada
+ErrorDocument 404 /index.html
+
+# Cache de arquivos estáticos (1 semana)
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType image/x-icon "access plus 1 month"
+</IfModule>
+
+# Compressão GZIP
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json
+</IfModule>
+
+# Segurança - Esconder versão do Apache
+ServerSignature Off
+
+# Bloquear acesso a arquivos sensíveis
+<Files ".htaccess">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Headers de segurança
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>

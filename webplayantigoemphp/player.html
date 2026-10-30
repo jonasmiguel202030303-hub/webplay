@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>WebPlay</title>
+    <link rel="manifest" href="api/admin_api.php?action=manifest">
+    <meta name="theme-color" content="#050509">
+    <meta name="color-scheme" content="dark">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="WebPlay">
+    <link rel="apple-touch-icon" href="api/admin_api.php?action=favicon">
+    <link rel="icon" href="api/admin_api.php?action=favicon">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7"></script>
+</head>
+<body class="player-body">
+
+<!-- BANNER INSTALAR APP -->
+<div class="install-banner" id="installBanner" style="display:none;">
+    <div class="install-banner-content">
+        <img src="icons/icon-192.png" alt="App" class="install-icon" id="installBannerIcon">
+        <div class="install-text">
+            <strong class="brand-name-install">Instalar App</strong>
+            <span>Adicione à tela inicial para acesso rápido!</span>
+        </div>
+        <button class="install-btn" id="btnInstallApp"><i class="fas fa-download"></i> Instalar</button>
+        <button class="install-close" id="btnCloseInstall"><i class="fas fa-times"></i></button>
+    </div>
+</div>
+
+<!-- SPLASH SCREEN -->
+<div class="splash-screen" id="splashScreen">
+    <div class="splash-content">
+        <div class="splash-logo">
+            <span class="brand-name-splash">WebPlay</span>
+            <span class="splash-plus">+</span>
+        </div>
+    </div>
+</div>
+
+<!-- PROFILE SELECTOR SCREEN -->
+<div class="profile-selector-screen" id="profileSelectorScreen" style="display:none;">
+    <div class="profile-selector-content">
+        <div class="profile-selector-logo">
+            <span class="brand-name-selector">WebPlay</span>
+            <span class="selector-plus">+</span>
+        </div>
+        <h2 class="profile-selector-title">Quem está assistindo?</h2>
+        <div class="profile-selector-grid" id="profileSelectorGrid"></div>
+        <div class="profile-selector-actions">
+            <button class="profile-action-btn" id="btnManageProfilesSelector" type="button">
+                <i class="fas fa-pen-to-square"></i> Gerenciar Perfis
+            </button>
+            <button class="profile-action-btn danger" id="btnLogoutSelector" type="button">
+                <i class="fas fa-right-from-bracket"></i> Sair
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- PROFILE MANAGE MODAL -->
+<div class="profile-manage-overlay" id="profileManageModal" style="display:none;">
+    <div class="profile-manage-content">
+        <div class="profile-manage-header">
+            <div class="profile-manage-header-icon">
+                <i class="fas fa-user-plus"></i>
+            </div>
+            <h2 id="profileManageTitle">Novo Perfil</h2>
+            <button class="modal-close" id="btnCloseProfileManage" type="button"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="profile-manage-form" id="profileManageForm">
+            <div class="form-group">
+                <label>Nome do Perfil</label>
+                <input type="text" id="profileNameInput" placeholder="Ex: João, Maria..." maxlength="20" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>Escolha um Avatar</label>
+                <div class="profile-avatar-grid" id="profileAvatarGrid"></div>
+            </div>
+            <div class="form-group kids-toggle-group">
+                <div class="kids-toggle-card" id="kidsToggleCard">
+                    <div class="kids-toggle-left">
+                        <div class="kids-toggle-icon"><i class="fas fa-child-reaching"></i></div>
+                        <div class="kids-toggle-info">
+                            <span class="kids-toggle-title">Perfil Kids</span>
+                            <span class="kids-toggle-desc">Exibe apenas conteúdo infantil (canais, filmes e séries)</span>
+                        </div>
+                    </div>
+                    <label class="switch-toggle">
+                        <input type="checkbox" id="profileIsKids">
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="profile-manage-actions">
+                <button class="btn-profile-delete" id="btnDeleteProfile" style="display:none" type="button">
+                    <i class="fas fa-trash-can"></i> Excluir Perfil
+                </button>
+                <button class="btn-profile-save" id="btnSaveProfile" type="button">
+                    <i class="fas fa-plus-circle"></i> Criar Perfil
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="app-container" id="appContainer" style="display:none;">
+
+    <!-- NETFLIX TOP NAVBAR -->
+    <nav class="nf-topnav" id="nfTopnav">
+        <div class="nf-topnav-left">
+            <div class="nf-topnav-logo">
+                <div class="nav-logo-icon"><i class="fas fa-play"></i></div>
+                <span class="brand-name-sidebar">WebPlay</span>
+            </div>
+            <ul class="nf-topnav-links" id="nfTopnavLinks">
+                <li class="nf-nav-link active" data-section="home"><i class="fas fa-home"></i> Início</li>
+                <li class="nf-nav-link" data-section="live"><i class="fas fa-satellite-dish"></i> Canais</li>
+                <li class="nf-nav-link" data-section="movies"><i class="fas fa-film"></i> Filmes</li>
+                <li class="nf-nav-link" data-section="series"><i class="fas fa-tv"></i> Séries</li>
+                <li class="nf-nav-link" data-section="radio"><i class="fas fa-broadcast-tower"></i> Rádio</li>
+                <li class="nf-nav-link" data-section="favorites"><i class="fas fa-heart"></i> Favoritos</li>
+            </ul>
+        </div>
+        <div class="nf-topnav-right">
+            <div class="nf-topnav-search" id="nfSearchWrap">
+                <i class="fas fa-search"></i>
+                <input type="text" id="globalSearch" placeholder="Buscar...">
+            </div>
+            <button class="nf-topnav-icon nf-topnav-install" id="btnTopnavInstall" style="display:none" title="Instalar App"><i class="fas fa-download"></i></button>
+            <button class="nf-topnav-icon" id="btnTopnavNotif" title="Notificações"><i class="fas fa-bell"></i><span class="notif-badge" id="notifBadgeTop" style="display:none"></span></button>
+            <div class="nf-topnav-avatar" id="nfTopnavAvatar">
+                <div class="nf-avatar-btn" id="nfAvatarBtn">
+                    <div class="profile-avatar-small nf-avatar-sm" id="topnavProfileAvatar"><i class="fas fa-user"></i></div>
+                </div>
+                <div class="nf-avatar-dropdown" id="nfAvatarDropdown">
+                    <div class="nf-avatar-profile-info" id="nfAvatarProfileInfo"></div>
+                    <div class="nf-avatar-sep"></div>
+                    <button class="nf-avatar-item" id="btnTopnavSwitchProfile"><i class="fas fa-users-rectangle"></i> Trocar Perfil</button>
+                    <button class="nf-avatar-item" id="btnTopnavSettings" data-section="settings"><i class="fas fa-cog"></i> Configurações</button>
+                    <button class="nf-avatar-item" id="btnTopnavEpg" data-section="epg"><i class="fas fa-calendar-alt"></i> Guia EPG</button>
+                    <button class="nf-avatar-item nf-avatar-refresh" id="btnTopnavRefresh"><i class="fas fa-sync-alt"></i> Atualizar</button>
+                    <button class="nf-avatar-item nf-avatar-logout" id="btnTopnavLogout"><i class="fas fa-sign-out-alt"></i> Sair</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- SIDEBAR (mobile drawer) -->
+    <nav class="nav-sidebar" id="navSidebar">
+        <div class="nav-logo">
+            <div class="nav-logo-icon"><i class="fas fa-play"></i></div>
+            <div class="logo-text"><span class="brand-name-sidebar">WebPlay</span></div>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item active" data-section="home"><i class="fas fa-home"></i><span>Início</span></li>
+            <li class="nav-item" data-section="live"><i class="fas fa-satellite-dish"></i><span>Canais</span></li>
+            <li class="nav-item" data-section="movies"><i class="fas fa-film"></i><span>Filmes</span></li>
+            <li class="nav-item" data-section="series"><i class="fas fa-tv"></i><span>Séries</span></li>
+            <li class="nav-item" data-section="radio"><i class="fas fa-broadcast-tower"></i><span>Rádio</span></li>
+            <li class="nav-item" data-section="favorites"><i class="fas fa-heart"></i><span>Favoritos</span></li>
+            <li class="nav-item" data-section="epg"><i class="fas fa-calendar-alt"></i><span>Guia EPG</span></li>
+        </ul>
+        <div class="nav-separator"></div>
+        <ul class="nav-menu nav-actions">
+            <li class="nav-item" data-section="settings"><i class="fas fa-cog"></i><span>Configurações</span></li>
+            <li class="nav-item nav-notif-item" id="btnNotifSidebar"><i class="fas fa-bell"></i><span>Notificações</span><span class="notif-badge notif-badge-sidebar" id="notifBadgeSidebar" style="display:none"></span></li>
+            <li class="nav-item" id="btnRefreshData"><i class="fas fa-sync-alt"></i><span>Atualizar</span></li>
+            <li class="nav-item nav-install" id="btnSidebarInstall" style="display:none"><i class="fas fa-download"></i><span>Instalar App</span></li>
+        </ul>
+        <div class="nav-user">
+            <div class="profile-switcher" id="profileSwitcher">
+                <div class="profile-current" id="profileCurrent">
+                    <div class="profile-avatar-small" id="profileAvatarSmall"><i class="fas fa-paw"></i></div>
+                    <span class="profile-name-small" id="profileNameSmall">Principal</span>
+                    <i class="fas fa-chevron-down profile-arrow"></i>
+                </div>
+                <div class="profile-dropdown" id="profileDropdown">
+                    <div class="profile-list" id="profileList"></div>
+                    <button class="profile-manage-btn" id="btnManageProfiles"><i class="fas fa-user-cog"></i> Gerenciar Perfis</button>
+                </div>
+            </div>
+            <button class="btn-switch-profile" id="btnSwitchProfile" type="button"><i class="fas fa-users-rectangle"></i><span>Trocar Perfil</span></button>
+            <button class="btn-logout" id="btnLogout"><i class="fas fa-sign-out-alt"></i><span>Sair</span></button>
+        </div>
+    </nav>
+
+    <!-- OVERLAY MOBILE -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- CONTEÚDO -->
+    <div class="main-content">
+        <!-- Barra mobile -->
+        <div class="mobile-topbar" id="mobileTopbar">
+            <button class="btn-menu" id="btnMobileMenu"><i class="fas fa-bars"></i></button>
+            <div class="mobile-logo"><span class="brand-name-mobile">WebPlay</span></div>
+            <button class="btn-notif" id="btnNotifMobile"><i class="fas fa-bell"></i><span class="notif-badge" id="notifBadgeMobile" style="display:none"></span></button>
+        </div>
+
+        <!-- HOME -->
+        <section class="content-section active" id="section-home">
+            <!-- Hero Banner -->
+            <div class="nf-hero" id="nfHero" style="display:none;">
+                <div class="nf-hero-bg" id="nfHeroBg"></div>
+                <div class="nf-hero-gradient"></div>
+                <div class="nf-hero-content">
+                    <span class="nf-hero-badge"><i class="fas fa-fire"></i> EM DESTAQUE</span>
+                    <h1 class="nf-hero-title" id="nfHeroTitle"></h1>
+                    <div class="nf-hero-meta" id="nfHeroMeta"></div>
+                    <p class="nf-hero-desc" id="nfHeroDesc"></p>
+                    <div class="nf-hero-actions">
+                        <button class="nf-hero-btn nf-hero-btn-play" id="nfHeroPlay"><i class="fas fa-play"></i> Assistir</button>
+                        <button class="nf-hero-btn nf-hero-btn-info" id="nfHeroInfo"><i class="fas fa-info-circle"></i> Mais Informações</button>
+                    </div>
+                </div>
+            </div>
+            <div id="homeContent">
+                <div class="loading-placeholder"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
+            </div>
+        </section>
+
+        <!-- CANAIS -->
+        <section class="content-section" id="section-live">
+            <div class="section-header">
+                <h2><i class="fas fa-satellite-dish"></i> Canais ao Vivo</h2>
+                <div class="section-header-right">
+                    <span class="section-count" id="liveCount"></span>
+                    <div class="section-search"><i class="fas fa-search"></i><input type="text" id="liveSearch" placeholder="Buscar canal..."></div>
+                </div>
+            </div>
+
+            <!-- === DESKTOP TV LAYOUT (3 painéis) === -->
+            <div class="tv-layout" id="tvLayout" style="display:none;">
+                <!-- Painel Esquerdo: Categorias -->
+                <div class="tv-panel tv-categories">
+                    <div class="tv-panel-header">
+                        <i class="fas fa-th-large"></i>
+                        <span id="tvCatTitle">Todos</span>
+                        <span class="tv-panel-count" id="tvCatTotalCount">0</span>
+                    </div>
+                    <div class="tv-cat-list" id="tvCatList"></div>
+                </div>
+                <!-- Painel Central: Lista de Canais -->
+                <div class="tv-panel tv-channels">
+                    <div class="tv-channel-list" id="tvChannelList"></div>
+                </div>
+                <!-- Painel Direito: Preview + EPG -->
+                <div class="tv-panel tv-preview">
+                    <div class="tv-preview-player" id="tvPreviewPlayer">
+                        <video id="tvPreviewVideo" autoplay playsinline webkit-playsinline></video>
+                        <div class="tv-preview-loader" id="tvPreviewLoader">
+                            <div class="loader-spinner"><div></div><div></div><div></div><div></div></div>
+                        </div>
+                        <!-- Controls bar (igual modal) -->
+                        <div class="tv-preview-controls" id="tvPreviewControls">
+                            <button class="tv-ctrl-btn" id="tvCtrlPlayPause" title="Play / Pause"><i class="fas fa-pause"></i></button>
+                            <button class="tv-ctrl-btn" id="tvCtrlMute" title="Volume"><i class="fas fa-volume-up"></i></button>
+                            <div class="tv-ctrl-progress">
+                                <div class="tv-ctrl-progress-bar" id="tvCtrlProgressBar"></div>
+                            </div>
+                            <span class="tv-ctrl-live-badge"><span class="ctrl-live-dot"></span> LIVE</span>
+                            <button class="tv-ctrl-btn" id="tvCtrlExpand" title="Tela cheia"><i class="fas fa-expand"></i></button>
+                        </div>
+                        <div class="tv-preview-info" id="tvPreviewInfo">
+                            <span class="tv-preview-num" id="tvPreviewNum"></span>
+                            <img class="tv-preview-logo" id="tvPreviewLogo" src="" alt="" style="display:none">
+                            <span class="tv-preview-name" id="tvPreviewName">Selecione um canal</span>
+                        </div>
+                    </div>
+                    <div class="tv-epg-list" id="tvEpgList">
+                        <div class="tv-epg-empty">Selecione um canal para ver a programação</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- === MOBILE: Carrosseis por categoria (mantém) === -->
+            <div class="cat-carousels" id="liveCarousels">
+                <div class="loading-placeholder"><i class="fas fa-spinner fa-spin"></i> Carregando canais...</div>
+            </div>
+            <!-- Grid expandido (ao clicar Ver todos) -->
+            <div class="expanded-grid-wrap" id="liveExpandedWrap" style="display:none;">
+                <div class="expanded-grid-header">
+                    <button class="expanded-back" id="liveExpandedBack"><i class="fas fa-arrow-left"></i> Voltar</button>
+                    <h3 id="liveExpandedTitle">Categoria</h3>
+                    <span class="expanded-count" id="liveExpandedCount"></span>
+                </div>
+                <div class="items-grid channel-grid" id="liveExpandedGrid"></div>
+            </div>
+        </section>
+
+        <!-- FILMES -->
+        <section class="content-section" id="section-movies">
+            <div class="section-header">
+                <h2><i class="fas fa-film"></i> Filmes</h2>
+                <div class="section-header-right">
+                    <span class="section-count" id="moviesCount"></span>
+                    <div class="section-search"><i class="fas fa-search"></i><input type="text" id="moviesSearch" placeholder="Buscar filme..."></div>
+                </div>
+            </div>
+            <div class="brand-services-row" id="moviesBrandRow"></div>
+            <div class="cat-carousels" id="moviesCarousels">
+                <div class="loading-placeholder"><i class="fas fa-spinner fa-spin"></i> Carregando filmes...</div>
+            </div>
+            <div class="expanded-grid-wrap" id="moviesExpandedWrap" style="display:none;">
+                <div class="expanded-grid-header">
+                    <button class="expanded-back" id="moviesExpandedBack"><i class="fas fa-arrow-left"></i> Voltar</button>
+                    <h3 id="moviesExpandedTitle">Categoria</h3>
+                    <span class="expanded-count" id="moviesExpandedCount"></span>
+                </div>
+                <div class="items-grid poster-grid" id="moviesExpandedGrid"></div>
+            </div>
+        </section>
+
+        <!-- SÉRIES -->
+        <section class="content-section" id="section-series">
+            <div class="section-header">
+                <h2><i class="fas fa-tv"></i> Séries</h2>
+                <div class="section-header-right">
+                    <span class="section-count" id="seriesCount"></span>
+                    <div class="section-search"><i class="fas fa-search"></i><input type="text" id="seriesSearch" placeholder="Buscar série..."></div>
+                </div>
+            </div>
+            <div class="brand-services-row" id="seriesBrandRow"></div>
+            <div class="cat-carousels" id="seriesCarousels">
+                <div class="loading-placeholder"><i class="fas fa-spinner fa-spin"></i> Carregando séries...</div>
+            </div>
+            <div class="expanded-grid-wrap" id="seriesExpandedWrap" style="display:none;">
+                <div class="expanded-grid-header">
+                    <button class="expanded-back" id="seriesExpandedBack"><i class="fas fa-arrow-left"></i> Voltar</button>
+                    <h3 id="seriesExpandedTitle">Categoria</h3>
+                    <span class="expanded-count" id="seriesExpandedCount"></span>
+                </div>
+                <div class="items-grid poster-grid" id="seriesExpandedGrid"></div>
+            </div>
+        </section>
+
+        <!-- RÁDIO -->
+        <section class="content-section" id="section-radio">
+            <div class="section-header">
+                <h2><i class="fas fa-broadcast-tower"></i> Rádio</h2>
+                <div class="section-header-right">
+                    <span class="section-count" id="radioCount"></span>
+                    <div class="section-search"><i class="fas fa-search"></i><input type="text" id="radioSearch" placeholder="Buscar rádio..."></div>
+                </div>
+            </div>
+            <div class="radio-grid-container" id="radioGrid">
+                <div class="loading-placeholder"><i class="fas fa-spinner fa-spin"></i> Carregando rádios...</div>
+            </div>
+        </section>
+
+        <!-- FAVORITOS -->
+        <section class="content-section" id="section-favorites">
+            <div class="section-header"><h2><i class="fas fa-heart"></i> Favoritos</h2></div>
+            <div class="favorites-tabs">
+                <button class="fav-tab active" data-type="live">Canais</button>
+                <button class="fav-tab" data-type="vod">Filmes</button>
+                <button class="fav-tab" data-type="series">Séries</button>
+            </div>
+            <div class="items-grid" id="favoritesGrid"></div>
+        </section>
+
+        <!-- EPG -->
+        <section class="content-section" id="section-epg">
+            <div class="section-header">
+                <h2><i class="fas fa-calendar-alt"></i> Guia EPG</h2>
+                <div class="section-search"><i class="fas fa-search"></i><input type="text" id="epgSearch" placeholder="Buscar canal..."></div>
+            </div>
+            <div id="epgChannelList" class="epg-channel-list">
+                <div class="loading-placeholder"><i class="fas fa-spinner fa-spin"></i> Carregando guia...</div>
+            </div>
+        </section>
+
+        <!-- CONFIGURAÇÕES -->
+        <section class="content-section" id="section-settings">
+            <div class="section-header"><h2><i class="fas fa-cog"></i> Configurações</h2></div>
+            <div class="settings-container">
+                <!-- Informações da Conta -->
+                <div class="settings-card settings-account-card">
+                    <div class="settings-card-header">
+                        <div class="settings-card-icon"><i class="fas fa-user-circle"></i></div>
+                        <div>
+                            <h3>Minha Conta</h3>
+                            <p>Informações do seu plano</p>
+                        </div>
+                    </div>
+                    <div class="settings-account-info">
+                        <div class="account-info-row">
+                            <div class="account-info-item">
+                                <span class="account-label"><i class="fas fa-user"></i> Usuário</span>
+                                <span class="account-value" id="settingsUserName">-</span>
+                            </div>
+                            <div class="account-info-item">
+                                <span class="account-label"><i class="fas fa-calendar-alt"></i> Validade</span>
+                                <span class="account-value" id="settingsUserExpiry">-</span>
+                            </div>
+                            <div class="account-info-item">
+                                <span class="account-label"><i class="fas fa-plug"></i> Conexões</span>
+                                <span class="account-value" id="settingsUserConnections">-</span>
+                            </div>
+                            <div class="account-info-item">
+                                <span class="account-label"><i class="fas fa-check-circle"></i> Status</span>
+                                <span class="account-value account-status" id="settingsUserStatus">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Modo de Exibição -->
+                <div class="settings-card">
+                    <div class="settings-card-header">
+                        <div class="settings-card-icon"><i class="fas fa-th-large"></i></div>
+                        <div>
+                            <h3>Modo de Exibição</h3>
+                            <p>Escolha como os conteúdos são apresentados</p>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <div class="display-mode-options">
+                            <label class="display-mode-option">
+                                <input type="radio" name="displayMode" value="carousel" id="displayModeCarousel" checked>
+                                <div class="display-mode-card">
+                                    <i class="fas fa-grip-lines"></i>
+                                    <span>Carrossel</span>
+                                    <small>Scroll horizontal por categoria</small>
+                                </div>
+                            </label>
+                            <label class="display-mode-option">
+                                <input type="radio" name="displayMode" value="grid" id="displayModeGrid">
+                                <div class="display-mode-card">
+                                    <i class="fas fa-th"></i>
+                                    <span>Grade</span>
+                                    <small>Todos os itens em grid</small>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <!-- Controle Parental -->
+                <div class="settings-card">
+                    <div class="settings-card-header">
+                        <div class="settings-card-icon"><i class="fas fa-shield-alt"></i></div>
+                        <div>
+                            <h3>Controle Parental</h3>
+                            <p>Bloqueie categorias com conteúdo adulto ou indesejado</p>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">Status</label>
+                        <div class="settings-toggle-row">
+                            <span id="parentalStatusText">Desativado</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="parentalToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">Alterar PIN (padrão: 0000)</label>
+                        <div class="pin-change-row">
+                            <input type="password" id="pinCurrent" placeholder="PIN atual" maxlength="4" class="pin-input">
+                            <input type="password" id="pinNew" placeholder="Novo PIN" maxlength="4" class="pin-input">
+                            <button class="btn-settings" id="btnChangePin"><i class="fas fa-key"></i> Alterar</button>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label"><i class="fas fa-satellite-dish"></i> Categorias Bloqueadas — Canais</label>
+                        <div class="blocked-cats-list" id="blockedLiveCats">
+                            <div class="loading-placeholder-sm"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label"><i class="fas fa-film"></i> Categorias Bloqueadas — Filmes</label>
+                        <div class="blocked-cats-list" id="blockedVodCats">
+                            <div class="loading-placeholder-sm"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label"><i class="fas fa-tv"></i> Categorias Bloqueadas — Séries</label>
+                        <div class="blocked-cats-list" id="blockedSeriesCats">
+                            <div class="loading-placeholder-sm"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Cache -->
+                <div class="settings-card">
+                    <div class="settings-card-header">
+                        <div class="settings-card-icon"><i class="fas fa-bolt"></i></div>
+                        <div>
+                            <h3>Turbo Cache</h3>
+                            <p>Acelera o carregamento salvando dados temporariamente</p>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <button class="btn-settings btn-danger" id="btnClearCache"><i class="fas fa-trash"></i> Limpar Cache</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+</div>
+
+<!-- BOTTOM NAV BAR MOBILE (estilo app) -->
+<nav class="mobile-bottom-nav" id="mobileBottomNav">
+    <button class="bottom-nav-item active" data-section="home">
+        <i class="fas fa-home"></i>
+        <span>Início</span>
+    </button>
+    <button class="bottom-nav-item" data-section="live">
+        <i class="fas fa-satellite-dish"></i>
+        <span>Canais</span>
+    </button>
+    <button class="bottom-nav-item" data-section="movies">
+        <i class="fas fa-film"></i>
+        <span>Filmes</span>
+    </button>
+    <button class="bottom-nav-item" data-section="series">
+        <i class="fas fa-tv"></i>
+        <span>Séries</span>
+    </button>
+    <button class="bottom-nav-item" data-section="radio">
+        <i class="fas fa-broadcast-tower"></i>
+        <span>Rádio</span>
+    </button>
+    <button class="bottom-nav-item" data-section="favorites">
+        <i class="fas fa-heart"></i>
+        <span>Favoritos</span>
+    </button>
+</nav>
+
+<!-- MODAL NOTIFICAÇÕES -->
+<div class="modal-overlay" id="notifModal" style="display:none;">
+    <div class="modal-content modal-notif">
+        <div class="notif-modal-header">
+            <h3><i class="fas fa-bell"></i> Notificações</h3>
+            <button class="modal-close" id="notifModalClose"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="notif-modal-tabs">
+            <button class="notif-tab active" data-notif-tab="all"><i class="fas fa-layer-group"></i> Todos</button>
+            <button class="notif-tab" data-notif-tab="live"><i class="fas fa-satellite-dish"></i> Canais</button>
+            <button class="notif-tab" data-notif-tab="vod"><i class="fas fa-film"></i> Filmes</button>
+            <button class="notif-tab" data-notif-tab="series"><i class="fas fa-tv"></i> Séries</button>
+        </div>
+        <div class="notif-modal-body" id="notifModalBody">
+            <div class="loading-placeholder"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
+        </div>
+        <div class="notif-modal-footer">
+            <button class="btn-clear-notif" id="btnClearNotif"><i class="fas fa-check-double"></i> Limpar Notificações</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PIN PARENTAL -->
+<div class="modal-overlay" id="pinModal" style="display:none;">
+
+<!-- MODAL CONTA TESTE/TRIAL -->
+<div class="modal-overlay" id="trialModal" style="display:none;">
+    <div class="modal-content modal-expiry" style="position:relative;max-width:420px;">
+        <!-- Botão X para fechar -->
+        <button id="trialBtnX" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,.1);border:none;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:14px;transition:background .2s;" onmouseenter="this.style.background='rgba(255,255,255,.2)'" onmouseleave="this.style.background='rgba(255,255,255,.1)'"><i class="fas fa-times"></i></button>
+
+        <div class="expiry-modal-icon" style="background:linear-gradient(135deg,#f59e0b,#ef4444);"><i class="fas fa-flask"></i></div>
+        <h3 id="trialModalTitle" style="font-size:1.2rem;">🧪 Você está no Modo Teste!</h3>
+        <p style="color:#c0c0d0;margin:8px 0 4px;font-size:.93rem;line-height:1.5;">Esta é uma conta de <strong style="color:#f59e0b;">acesso gratuito de teste</strong>. Aproveite para conhecer todos os recursos!</p>
+
+        <!-- Horas disponíveis (destaque) -->
+        <div style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);border-radius:10px;padding:12px 16px;margin:12px 0;display:flex;align-items:center;gap:10px;">
+            <i class="fas fa-clock" style="color:#f59e0b;font-size:1.3rem;"></i>
+            <div>
+                <div style="font-size:.78rem;color:#a0a0b0;text-transform:uppercase;letter-spacing:.05em;">Tempo disponível</div>
+                <div style="font-size:1.25rem;font-weight:700;color:#f59e0b;" id="trialHoursLeft">--</div>
+            </div>
+        </div>
+
+        <div class="expiry-modal-date" style="margin-bottom:14px;">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Expira em: <strong id="trialExpireDate">--</strong></span>
+        </div>
+
+        <div class="expiry-modal-actions">
+            <button class="expiry-btn-renew" id="trialBtnRenew"><i class="fas fa-crown"></i> Assinar Agora</button>
+            <button class="expiry-btn-close" id="trialBtnClose">Continuar no Teste</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL AVISO VENCIMENTO -->
+<div class="modal-overlay" id="expiryModal" style="display:none;">
+    <div class="modal-content modal-expiry">
+        <div class="expiry-modal-icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <h3 id="expiryModalTitle">Sua assinatura está acabando!</h3>
+        <p id="expiryModalMsg">Sua conta vence em <strong id="expiryDaysLeft">3</strong> dia(s). Renove para continuar assistindo sem interrupções.</p>
+        <div class="expiry-modal-date">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Vencimento: <strong id="expiryDateStr">--</strong></span>
+        </div>
+        <div class="expiry-modal-actions">
+            <button class="expiry-btn-renew" id="expiryBtnRenew"><i class="fab fa-whatsapp"></i> Renovar Agora</button>
+            <button class="expiry-btn-close" id="expiryBtnClose">Entendi</button>
+        </div>
+    </div>
+</div>
+    <div class="modal-content modal-pin">
+        <div class="pin-modal-icon"><i class="fas fa-lock"></i></div>
+        <h3>Controle Parental</h3>
+        <p>Digite o PIN para acessar</p>
+        <div class="pin-dots" id="pinDots">
+            <span></span><span></span><span></span><span></span>
+        </div>
+        <div class="pin-keypad" id="pinKeypad">
+            <button data-num="1">1</button><button data-num="2">2</button><button data-num="3">3</button>
+            <button data-num="4">4</button><button data-num="5">5</button><button data-num="6">6</button>
+            <button data-num="7">7</button><button data-num="8">8</button><button data-num="9">9</button>
+            <button data-num="clear"><i class="fas fa-times"></i></button><button data-num="0">0</button><button data-num="back"><i class="fas fa-backspace"></i></button>
+        </div>
+        <p class="pin-error" id="pinError" style="display:none;">PIN incorreto</p>
+    </div>
+</div>
+
+<!-- MODAL FILME — Netflix Style Premium -->
+<div class="nf-modal-overlay" id="movieModal" style="display:none;">
+    <div class="nf-modal-content">
+        <button class="nf-modal-close" id="movieModalClose"><i class="fas fa-times"></i></button>
+        <div class="nf-modal-backdrop" id="movieModalBackdrop">
+            <div class="nf-modal-trailer-wrap" id="movieTrailerWrap" style="display:none;">
+                <iframe id="movieTrailerFrame" allowfullscreen allow="autoplay; encrypted-media" frameborder="0"></iframe>
+                <button class="nf-trailer-mute-btn" id="movieTrailerMute" title="Som"><i class="fas fa-volume-up"></i></button>
+            </div>
+            <!-- Logo title overlay on backdrop -->
+            <div class="nf-modal-logo-title" id="movieModalLogoTitle"></div>
+        </div>
+        <div class="nf-modal-backdrop-gradient"></div>
+        <div class="nf-modal-body">
+            <!-- Title + year badge -->
+            <h1 class="nf-modal-title" id="movieModalTitle">-</h1>
+            
+            <!-- Action buttons row (Netflix style) -->
+            <div class="nf-modal-actions-top">
+                <button class="nf-modal-btn-play" id="movieModalPlay"><i class="fas fa-play"></i> Assistir</button>
+                <button class="nf-modal-btn-resume" id="movieModalResume" style="display:none;"><i class="fas fa-redo"></i> Continuar</button>
+            </div>
+
+            <!-- Circular action buttons row -->
+            <div class="nf-modal-circle-actions">
+                <div class="nf-circle-action" id="movieModalFavWrap">
+                    <button class="nf-circle-btn" id="movieModalFav"><i class="fas fa-plus"></i></button>
+                    <span>Minha Lista</span>
+                </div>
+                <div class="nf-circle-action" id="movieModalRateWrap">
+                    <button class="nf-circle-btn" id="movieModalRate"><i class="fas fa-thumbs-up"></i></button>
+                    <span>Classifique</span>
+                </div>
+                <div class="nf-circle-action">
+                    <button class="nf-circle-btn" id="movieModalTrailerBtn" style="display:none;"><i class="fas fa-play"></i></button>
+                    <span id="movieTrailerLabel" style="display:none;">Trailer</span>
+                </div>
+                <div class="nf-circle-action">
+                    <button class="nf-circle-btn" id="movieModalShare"><i class="fas fa-paper-plane"></i></button>
+                    <span>Compartilhar</span>
+                </div>
+            </div>
+
+            <!-- Meta row: match %, year, duration, HD, maturity -->
+            <div class="nf-modal-meta-row" id="movieModalMeta"></div>
+
+            <!-- Progress bar (continuar assistindo) -->
+            <div class="nf-modal-progress-wrap" id="movieModalProgressWrap" style="display:none;">
+                <div class="nf-modal-progress-bar"><div class="nf-modal-progress-fill" id="movieModalProgressFill"></div></div>
+                <span class="nf-modal-progress-text" id="movieModalProgressText"></span>
+            </div>
+
+            <!-- Description -->
+            <p class="nf-modal-desc" id="movieModalDesc">Sem descrição.</p>
+
+            <!-- Tags / Genres -->
+            <div class="nf-modal-tags" id="movieModalTags"></div>
+
+            <!-- Info grid (Director, Cast, etc) -->
+            <div class="nf-modal-info-grid" id="movieModalInfoGrid"></div>
+
+            <!-- Cast section with photos -->
+            <div class="nf-modal-cast-section" id="movieModalCastSection" style="display:none;">
+                <h3 class="nf-modal-section-title"><i class="fas fa-users"></i> Elenco</h3>
+                <div class="nf-modal-cast-scroll" id="movieModalCastGrid"></div>
+            </div>
+
+            <!-- Divider -->
+            <div class="nf-modal-divider"></div>
+
+            <!-- More Like This -->
+            <div class="nf-modal-more" id="movieModalMore" style="display:none;">
+                <h3 class="nf-modal-section-title"><i class="fas fa-th-large"></i> Mais como este</h3>
+                <div class="nf-modal-more-grid" id="movieModalMoreGrid"></div>
+            </div>
+
+            <!-- About section -->
+            <div class="nf-modal-about" id="movieModalAbout" style="display:none;">
+                <h3 class="nf-modal-section-title nf-modal-about-toggle" id="movieModalAboutToggle">
+                    <i class="fas fa-info-circle"></i> Sobre este filme
+                    <i class="fas fa-chevron-down nf-about-arrow"></i>
+                </h3>
+                <div class="nf-modal-about-content" id="movieModalAboutContent"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL SÉRIE — Netflix Style -->
+<div class="nf-modal-overlay" id="seriesModal" style="display:none;">
+    <div class="nf-modal-content">
+        <button class="nf-modal-close" id="seriesModalClose"><i class="fas fa-times"></i></button>
+        <div class="nf-modal-backdrop" id="seriesModalBackdrop"></div>
+        <div class="nf-modal-backdrop-gradient"></div>
+        <div class="nf-modal-body">
+            <h1 class="nf-modal-title" id="seriesModalTitle">-</h1>
+            <div class="nf-modal-actions-top">
+                <button class="nf-modal-btn-fav" id="seriesModalFav"><i class="fas fa-heart"></i></button>
+            </div>
+            <div class="nf-modal-meta-row" id="seriesModalMeta"></div>
+            <div class="nf-modal-two-col">
+                <div class="nf-modal-left">
+                    <p class="nf-modal-desc" id="seriesModalDesc">Sem descrição.</p>
+                </div>
+                <div class="nf-modal-right" id="seriesModalExtra"></div>
+            </div>
+            <div class="nf-modal-seasons">
+                <h3><i class="fas fa-list"></i> Temporadas & Episódios</h3>
+                <div class="seasons-tabs" id="seasonsTabs"></div>
+                <div class="episodes-list episodes-vertical" id="episodesList"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE CANAL AO VIVO -->
+<div class="modal-overlay" id="channelModal" style="display:none;">
+    <div class="ch-modal">
+        <!-- Close Button -->
+        <button class="ch-modal-close" id="chModalClose"><i class="fas fa-times"></i></button>
+        
+        <!-- Player Embed -->
+        <div class="ch-modal-player">
+            <video id="chModalVideo" autoplay playsinline webkit-playsinline></video>
+            <div class="ch-modal-loader" id="chModalLoader">
+                <div class="loader-spinner"><div></div><div></div><div></div><div></div></div>
+            </div>
+            <div class="ch-modal-player-controls">
+                <button class="ch-modal-ctrl-btn" id="chModalPlayPause"><i class="fas fa-pause"></i></button>
+                <span class="ch-modal-live-badge"><span class="ctrl-live-dot"></span> AO VIVO</span>
+                <div class="ch-modal-ctrl-right">
+                    <button class="ch-modal-ctrl-btn" id="chModalMute"><i class="fas fa-volume-up"></i></button>
+                    <button class="ch-modal-ctrl-btn ch-modal-fullscreen-btn" id="chModalFullscreen" title="Tela cheia"><i class="fas fa-expand"></i></button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- EPG Mobile (below player) -->
+        <div class="ch-modal-epg-mobile" id="chModalEpgMobile">
+            <div class="epg-now-item">
+                <span class="epg-now-badge">AGORA</span>
+                <span class="epg-now-time" id="chModalEpgMobileTime">--:--</span>
+                <span class="epg-now-title" id="chModalEpgMobileTitle">Carregando...</span>
+            </div>
+        </div>
+
+        <!-- Channel Info -->
+        <div class="ch-modal-info">
+            <div class="ch-modal-logo" id="chModalLogo"><i class="fas fa-tv"></i></div>
+            <div class="ch-modal-details">
+                <h3 id="chModalName">—</h3>
+                <p id="chModalCat">—</p>
+            </div>
+            <button class="ch-modal-fav" id="chModalFav"><i class="fas fa-plus"></i></button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="ch-modal-tabs">
+            <button class="ch-modal-tab active" data-tab="info"><i class="fas fa-info-circle"></i> Informações</button>
+            <button class="ch-modal-tab" data-tab="epg"><i class="fas fa-calendar-alt"></i> Guia de TV</button>
+            <button class="ch-modal-tab" data-tab="channels"><i class="fas fa-list"></i> Lista dos canais</button>
+        </div>
+
+        <!-- Tab Content: Informações -->
+        <div class="ch-modal-tab-content active" id="chTabInfo">
+            <div class="ch-modal-info-card">
+                <div class="ch-modal-now-playing">
+                    <span class="ch-modal-now-dot"></span>
+                    <span>Reproduzindo agora</span>
+                </div>
+                <h4 id="chModalNowTitle">Carregando programação...</h4>
+                <p id="chModalNowDesc" class="ch-modal-now-desc"></p>
+                <div class="ch-modal-now-time" id="chModalNowTime"></div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Guia de TV -->
+        <div class="ch-modal-tab-content" id="chTabEpg">
+            <button class="ch-modal-epg-load-btn" id="chModalEpgPrev"><i class="fas fa-chevron-up"></i> Anterior</button>
+            <div class="ch-modal-epg-list" id="chModalEpgList">
+                <div class="loading-placeholder"><i class="fas fa-spinner fa-spin"></i> Carregando guia...</div>
+            </div>
+            <button class="ch-modal-epg-load-btn" id="chModalEpgNext">Próximo <i class="fas fa-chevron-down"></i></button>
+        </div>
+
+        <!-- Tab Content: Lista dos canais -->
+        <div class="ch-modal-tab-content" id="chTabChannels">
+            <div class="ch-modal-ch-search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="chModalChSearch" placeholder="Buscar canal...">
+            </div>
+            <div class="ch-modal-ch-list" id="chModalChList">
+                <div class="loading-placeholder"><i class="fas fa-spinner fa-spin"></i> Carregando canais...</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Intro Overlay -->
+<div class="intro-overlay" id="introOverlay">
+    <div class="intro-bg-particles" id="introBgParticles"></div>
+    <div class="intro-glow"></div>
+    <div class="intro-content">
+        <div class="intro-logo" id="introLogo">
+            <i class="fas fa-play"></i>
+        </div>
+        <h1 class="intro-name" id="introName">WebPlay</h1>
+        <div class="intro-tagline" id="introTagline">Sua plataforma de streaming</div>
+    </div>
+    <button class="intro-skip" id="introSkip">
+        <i class="fas fa-forward"></i> Pular
+    </button>
+</div>
+
+<script>
+// Global branding config storage
+window.BRANDING = {};
+
+// White-label branding loader
+(async function loadBranding() {
+    try {
+        const r = await fetch('api/admin_api.php?action=public_branding');
+        if (!r.ok) return;
+        const b = await r.json();
+        
+        // Store globally for app.js to access
+        window.BRANDING = b;
+        
+        const name = b.app_name || 'WebPlay';
+        const logoUrl = b.logo_url || '';
+        const p = b.primary_color || '#7c3aed';
+        const s = b.secondary_color || '#a855f7';
+        const a = b.accent_color || '#5b21b6';
+        
+        // Aplicar nome em todos os locais
+        document.title = name;
+        document.querySelectorAll('.brand-name-sidebar').forEach(el => el.textContent = name);
+        document.querySelectorAll('.brand-name-mobile').forEach(el => el.textContent = name);
+        document.querySelectorAll('.brand-name-install').forEach(el => el.textContent = 'Instalar ' + name);
+        document.querySelectorAll('.brand-name-splash').forEach(el => el.textContent = name);
+        document.querySelectorAll('.brand-name-selector').forEach(el => el.textContent = name);
+        
+        // Aplicar ícone/logo no banner de instalação e favicon
+        const iconSrc = logoUrl ? logoUrl : ('icons/icon-192.png?v=' + Date.now());
+        const bannerIcon = document.getElementById('installBannerIcon');
+        if (bannerIcon) bannerIcon.src = iconSrc;
+        
+        // Atualizar favicon dinamicamente
+        let fav = document.querySelector('link[rel="icon"]');
+        if (fav) fav.href = iconSrc;
+        let apple = document.querySelector('link[rel="apple-touch-icon"]');
+        if (apple) apple.href = iconSrc;
+        
+        // Aplicar cores principais
+        const root = document.documentElement;
+        root.style.setProperty('--purple', p);
+        root.style.setProperty('--blue', s);
+        root.style.setProperty('--purple-glow', p + '40');
+        root.style.setProperty('--gradient', `linear-gradient(135deg,${a} 0%,${p} 100%)`);
+        root.style.setProperty('--btn-gradient', `linear-gradient(135deg,${a} 0%,${p} 50%,${s} 100%)`);
+        
+        // Aplicar cores avançadas de fundo
+        if (b.bg_primary) root.style.setProperty('--bg-primary', b.bg_primary);
+        if (b.bg_secondary) root.style.setProperty('--bg-secondary', b.bg_secondary);
+        if (b.bg_card) root.style.setProperty('--bg-card', b.bg_card);
+        if (b.text_color) root.style.setProperty('--text', b.text_color);
+        if (b.text_secondary) root.style.setProperty('--text-sec', b.text_secondary);
+        if (b.border_color) root.style.setProperty('--border', b.border_color);
+        
+        // Atualizar ícone da sidebar e topnav com logo
+        document.querySelectorAll('.nav-logo-icon').forEach(el => {
+            if (logoUrl) {
+                el.classList.add('has-logo');
+                el.innerHTML = `<img src="${logoUrl}" alt="" onerror="this.remove();this.parentElement.classList.remove('has-logo');this.parentElement.innerHTML='<i class=\\'fas fa-play\\'></i>'">`;
+            } else {
+                el.classList.remove('has-logo');
+                el.innerHTML = '<i class="fas fa-play"></i>';
+            }
+        });
+        
+        // Setup intro overlay
+        const introLogo = document.getElementById('introLogo');
+        const introName = document.getElementById('introName');
+        if (introLogo && logoUrl) {
+            introLogo.innerHTML = `<img src="${logoUrl}" alt="">`;
+        }
+        if (introName) {
+            introName.textContent = name;
+        }
+        
+    } catch {}
+})();
+</script>
+<script src="js/app.js"></script>
+</body>
+</html>

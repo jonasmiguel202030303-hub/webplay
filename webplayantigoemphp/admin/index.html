@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>WebPlay — Painel Administrativo</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" href="../icons/icon-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+    <!-- ===== TELA DE LOGIN (Netflix Style) ===== -->
+    <div id="loginScreen" class="login-screen">
+        <!-- Dark gradient background -->
+        <div class="nf-admin-bg"></div>
+
+        <!-- Brand top-left -->
+        <div class="nf-admin-brand">
+            <span class="brand-name-admin">WebPlay</span>
+            <span class="nf-admin-badge">ADMIN</span>
+        </div>
+
+        <!-- Centered login card -->
+        <div class="nf-admin-wrapper">
+            <div class="nf-admin-card">
+                <div class="nf-admin-card-header">
+                    <div class="nf-admin-icon"><i class="fas fa-shield-halved"></i></div>
+                    <h1>Painel Administrativo</h1>
+                    <p>Acesse o painel de controle</p>
+                </div>
+
+                <form id="adminLoginForm" class="nf-admin-form">
+                    <div class="nf-admin-input-wrap">
+                        <input type="text" id="loginUser" class="nf-admin-input" placeholder="Usuário" autocomplete="off" required>
+                    </div>
+                    <div class="nf-admin-input-wrap">
+                        <input type="password" id="loginPass" class="nf-admin-input" placeholder="Senha" required>
+                        <button type="button" class="nf-admin-toggle-pw" onclick="toggleLoginPass()">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <button type="submit" class="nf-admin-btn" id="btnLogin">
+                        <span class="btn-text"><i class="fas fa-sign-in-alt"></i> Entrar</span>
+                        <span class="btn-loading" style="display:none"><i class="fas fa-spinner fa-spin"></i> Entrando...</span>
+                    </button>
+                    <div class="login-error" id="loginError" style="display:none">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span id="loginErrorText"></span>
+                    </div>
+                </form>
+
+                <div class="nf-admin-footer">
+                    <a href="../"><i class="fas fa-arrow-left"></i> Voltar ao WebPlay</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== PAINEL ADMIN ===== -->
+    <div id="adminPanel" class="admin-panel" style="display:none">
+        
+        <!-- Sidebar -->
+        <aside class="admin-sidebar" id="adminSidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <div class="sidebar-logo-icon"><i class="fas fa-play"></i></div>
+                    <div class="sidebar-logo-text">
+                        <span class="brand-name-sidebar">WebPlay</span>
+                    </div>
+                </div>
+                <span class="admin-tag">ADMIN</span>
+            </div>
+
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="nav-link active" data-page="dashboard" onclick="navigateTo('dashboard')">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>Dashboard</span>
+                    </li>
+                    <li class="nav-link" data-page="servers" onclick="navigateTo('servers')">
+                        <i class="fas fa-server"></i>
+                        <span>Servidores DNS</span>
+                    </li>
+                    <li class="nav-link" data-page="apps" onclick="navigateTo('apps')">
+                        <i class="fas fa-store"></i>
+                        <span>Loja de Apps</span>
+                    </li>
+                    <li class="nav-link" data-page="logs" onclick="navigateTo('logs')">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span>Logs de Atividade</span>
+                    </li>
+                    <li class="nav-link" data-page="branding" onclick="navigateTo('branding')">
+                        <i class="fas fa-palette"></i>
+                        <span>Personalização</span>
+                    </li>
+                    <li class="nav-separator"></li>
+                    <li class="nav-link" data-page="settings" onclick="navigateTo('settings')">
+                        <i class="fas fa-cog"></i>
+                        <span>Configurações</span>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="admin-info">
+                    <div class="admin-avatar"><i class="fas fa-user-shield"></i></div>
+                    <div class="admin-details">
+                        <span class="admin-name" id="adminName">Admin</span>
+                        <span class="admin-role">Administrador</span>
+                    </div>
+                </div>
+                <button class="btn-admin-logout" onclick="adminLogout()">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </button>
+            </div>
+        </aside>
+
+        <!-- Overlay mobile -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+        <!-- Main -->
+        <main class="admin-main">
+            <!-- Topbar mobile -->
+            <div class="admin-topbar">
+                <button class="btn-hamburger" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="topbar-title">
+                    <span class="brand-name-topbar">WebPlay</span>
+                    <span class="admin-tag-sm">ADMIN</span>
+                </div>
+                <button class="btn-hamburger" onclick="adminLogout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+
+            <!-- ======= DASHBOARD ======= -->
+            <section class="page active" id="page-dashboard">
+                <div class="page-header">
+                    <h2><i class="fas fa-chart-pie"></i> Dashboard</h2>
+                    <p>Visão geral do sistema</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card stat-servers">
+                        <div class="stat-icon"><i class="fas fa-server"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-number" id="statServers">0</span>
+                            <span class="stat-label">Servidores DNS</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-servers-on">
+                        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-number" id="statServersOn">0</span>
+                            <span class="stat-label">Servidores Ativos</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-logs">
+                        <div class="stat-icon"><i class="fas fa-clipboard-list"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-number" id="statLogs">0</span>
+                            <span class="stat-label">Logs Registrados</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-apps">
+                        <div class="stat-icon"><i class="fas fa-store"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-number" id="statApps">0</span>
+                            <span class="stat-label">Apps Publicados</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dash-section">
+                    <h3><i class="fas fa-clock"></i> Atividade Recente</h3>
+                    <div class="logs-table-wrap">
+                        <table class="logs-table">
+                            <thead>
+                                <tr>
+                                    <th>Ação</th>
+                                    <th>Detalhes</th>
+                                    <th>IP</th>
+                                    <th>Data</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashLogs">
+                                <tr><td colspan="4" class="empty-row">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ======= SERVIDORES DNS ======= -->
+            <section class="page" id="page-servers">
+                <div class="page-header">
+                    <div>
+                        <h2><i class="fas fa-server"></i> Servidores DNS</h2>
+                        <p>Gerencie os servidores que podem acessar o WebPlay</p>
+                    </div>
+                    <button class="btn-primary" onclick="openServerModal()">
+                        <i class="fas fa-plus"></i> Adicionar Servidor
+                    </button>
+                </div>
+
+                <div class="servers-list" id="serversList">
+                    <div class="loading-state"><i class="fas fa-spinner fa-spin"></i> Carregando servidores...</div>
+                </div>
+            </section>
+
+            <!-- ======= LOJA DE APPS ======= -->
+            <section class="page" id="page-apps">
+                <div class="page-header">
+                    <div>
+                        <h2><i class="fas fa-store"></i> Loja de Apps</h2>
+                        <p>Gerencie APKs e aplicativos para download dos seus clientes</p>
+                    </div>
+                    <button class="btn-primary" onclick="openAppModal()">
+                        <i class="fas fa-cloud-upload-alt"></i> Publicar App
+                    </button>
+                </div>
+
+                <!-- API Info banner -->
+                <div class="api-info-banner">
+                    <div class="api-info-icon"><i class="fas fa-code"></i></div>
+                    <div class="api-info-content">
+                        <h4>API para App Android Próprio</h4>
+                        <p>Use esta API no seu aplicativo para carregar automaticamente todos os servidores DNS do painel:</p>
+                        <div class="api-url-box">
+                            <code id="apiEndpointUrl">—</code>
+                            <button class="btn-copy-api" onclick="copyApiUrl()" title="Copiar URL"><i class="fas fa-copy"></i></button>
+                        </div>
+                        <div class="api-details-toggle">
+                            <button class="btn-text-link" onclick="toggleApiDocs()"><i class="fas fa-book"></i> Ver documentação da API</button>
+                        </div>
+                        <div class="api-docs" id="apiDocs" style="display:none">
+                            <div class="api-doc-block">
+                                <h5>GET /api/admin_api.php?action=app_config</h5>
+                                <p>Retorna configuração completa para o app: nome, cores, servidores DNS e lista de apps</p>
+                                <pre>{
+  "app_name": "WebPlay",
+  "primary_color": "#7c3aed",
+  "servers": [
+    { "url": "http://server1.com", "name": "Servidor 1" },
+    { "url": "http://server2.com", "name": "Servidor 2" }
+  ],
+  "webplay_url": "https://seudominio.com/"
+}</pre>
+                            </div>
+                            <div class="api-doc-block">
+                                <h5>GET /api/admin_api.php?action=public_apps</h5>
+                                <p>Retorna lista de apps publicados com links de download direto</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Public store link -->
+                <div class="store-link-bar">
+                    <div class="store-link-info">
+                        <i class="fas fa-external-link-alt"></i>
+                        <span>Página pública da loja: </span>
+                        <a href="../apps.html" target="_blank" id="publicStoreUrl">—</a>
+                    </div>
+                    <button class="btn-secondary btn-sm" onclick="copyStoreUrl()"><i class="fas fa-copy"></i> Copiar Link</button>
+                </div>
+
+                <div class="apps-grid" id="appsGrid">
+                    <div class="loading-state"><i class="fas fa-spinner fa-spin"></i> Carregando apps...</div>
+                </div>
+            </section>
+
+            <!-- ======= LOGS ======= -->
+            <section class="page" id="page-logs">
+                <div class="page-header">
+                    <h2><i class="fas fa-clipboard-list"></i> Logs de Atividade</h2>
+                    <p>Histórico de ações no painel</p>
+                </div>
+
+                <div class="logs-table-wrap">
+                    <table class="logs-table">
+                        <thead>
+                            <tr>
+                                <th>Ação</th>
+                                <th>Detalhes</th>
+                                <th>IP</th>
+                                <th>Data</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsBody">
+                            <tr><td colspan="4" class="empty-row">Carregando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="logsPagination"></div>
+            </section>
+
+            <!-- ======= PERSONALIZAÇÃO / BRANDING ======= -->
+            <section class="page" id="page-branding">
+                <div class="page-header">
+                    <h2><i class="fas fa-palette"></i> Personalização</h2>
+                    <p>Design System — configure a identidade visual completa do seu aplicativo</p>
+                </div>
+
+                <!-- Barra de gradiente ao vivo -->
+                <div class="theme-gradient-bar" id="themeGradientBar"></div>
+
+                <div class="settings-grid">
+                    <!-- ROW 1: Identidade do App (full width) -->
+                    <div class="settings-card full-width">
+                        <div class="settings-card-head">
+                            <div class="sc-icon" style="background:linear-gradient(135deg,#7c3aed,#a855f7)"><i class="fas fa-pen-fancy"></i></div>
+                            <div>
+                                <h3>Identidade do Aplicativo</h3>
+                                <p>Nome, logo e ícone — aparece no login, player, PWA e banner de instalação</p>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Nome do App</label>
+                            <div class="input-wrap">
+                                <i class="fas fa-heading"></i>
+                                <input type="text" id="brandingName" placeholder="Ex: Meu IPTV Play" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>URL do Logo / Ícone <small style="color:var(--text-muted)">(PNG quadrado, min. 192x192)</small></label>
+                            <div class="input-wrap">
+                                <i class="fas fa-image"></i>
+                                <input type="url" id="brandingLogoUrl" placeholder="https://exemplo.com/meu-logo.png">
+                            </div>
+                            <div class="logo-upload-info">
+                                <i class="fas fa-info-circle"></i>
+                                Ao salvar, o ícone será aplicado no PWA (instalação), banner, manifest e favicon automaticamente.
+                                Se vazio, um ícone será gerado automaticamente com as cores do tema.
+                            </div>
+                        </div>
+
+                        <!-- Preview Live -->
+                        <div class="branding-preview-pro" id="brandingPreview">
+                            <div class="preview-label"><i class="fas fa-eye"></i> Pré-visualização em Tempo Real</div>
+                            <div class="preview-mockups">
+                                <!-- Preview App Icon -->
+                                <div class="preview-mockup-card">
+                                    <div class="preview-mockup-label">Ícone do App</div>
+                                    <div class="preview-app-icon-wrap">
+                                        <div class="preview-icon" id="previewIcon"><i class="fas fa-play"></i></div>
+                                        <div class="preview-app-name" id="previewName">WebPlay</div>
+                                    </div>
+                                </div>
+                                <!-- Preview Login -->
+                                <div class="preview-mockup-card preview-mockup-wide">
+                                    <div class="preview-mockup-label">Tela de Login</div>
+                                    <div class="preview-login-mock" id="previewLoginMock">
+                                        <div class="plm-header" id="previewLoginHeader">
+                                            <div class="plm-logo" id="previewLoginLogo"><i class="fas fa-play"></i></div>
+                                            <div class="plm-title" id="previewLoginTitle">WebPlay</div>
+                                        </div>
+                                        <div class="plm-input"><i class="fas fa-user"></i><span>Usuário</span></div>
+                                        <div class="plm-input"><i class="fas fa-lock"></i><span>Senha</span></div>
+                                        <div class="plm-btn" id="previewLoginBtn">Entrar</div>
+                                    </div>
+                                </div>
+                                <!-- Preview PWA Banner -->
+                                <div class="preview-mockup-card preview-mockup-wide">
+                                    <div class="preview-mockup-label">Banner de Instalação</div>
+                                    <div class="preview-pwa-banner" id="previewPwaBanner">
+                                        <svg class="preview-pwa-icon" id="previewPwaIcon" viewBox="0 0 192 192" width="42" height="42">
+                                            <defs><linearGradient id="pwag" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1d4ed8"/><stop offset="50%" stop-color="#2563eb"/><stop offset="100%" stop-color="#3b82f6"/></linearGradient></defs>
+                                            <rect width="192" height="192" fill="url(#pwag)" rx="24"/>
+                                            <circle cx="96" cy="96" r="60" fill="rgba(0,0,0,0.25)"/>
+                                            <polygon points="78,60 78,132 132,96" fill="white"/>
+                                        </svg>
+                                        <div class="preview-pwa-text">
+                                            <strong id="previewPwaTitle">Instalar WebPlay</strong>
+                                            <span>Adicione à tela inicial para acesso rápido!</span>
+                                        </div>
+                                        <span class="preview-pwa-btn">Instalar</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ROW 2: Cores do Tema (full width) -->
+                    <div class="settings-card full-width">
+                        <div class="settings-card-head">
+                            <div class="sc-icon" style="background:linear-gradient(135deg,#f59e0b,#ef4444)"><i class="fas fa-swatchbook"></i></div>
+                            <div>
+                                <h3>Cores do Tema</h3>
+                                <p>Configure a paleta de cores que define todo o visual do sistema</p>
+                            </div>
+                        </div>
+
+                        <!-- Color Pickers Profissionais -->
+                        <div class="color-pickers-pro">
+                            <div class="color-card" data-color="primary">
+                                <div class="color-card-header">
+                                    <div class="color-swatch-ring" id="swatchPrimary" style="--swatch-color:#7c3aed">
+                                        <div class="color-swatch-inner"></div>
+                                    </div>
+                                    <div class="color-card-info">
+                                        <span class="color-card-title">Cor Principal</span>
+                                        <span class="color-card-desc">Botões, destaques, sidebar e elementos ativos</span>
+                                    </div>
+                                </div>
+                                <div class="color-card-controls">
+                                    <input type="color" id="brandingPrimary" value="#7c3aed" class="color-picker-hidden">
+                                    <div class="color-hex-wrap">
+                                        <span class="color-hash">#</span>
+                                        <input type="text" id="brandingPrimaryHex" value="#7c3aed" class="color-hex-pro" maxlength="7">
+                                    </div>
+                                    <button type="button" class="color-pick-btn" onclick="document.getElementById('brandingPrimary').click()" title="Abrir seletor">
+                                        <i class="fas fa-eye-dropper"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="color-card" data-color="secondary">
+                                <div class="color-card-header">
+                                    <div class="color-swatch-ring" id="swatchSecondary" style="--swatch-color:#a855f7">
+                                        <div class="color-swatch-inner"></div>
+                                    </div>
+                                    <div class="color-card-info">
+                                        <span class="color-card-title">Cor Secundária</span>
+                                        <span class="color-card-desc">Gradientes, ícones, tags e badges</span>
+                                    </div>
+                                </div>
+                                <div class="color-card-controls">
+                                    <input type="color" id="brandingSecondary" value="#a855f7" class="color-picker-hidden">
+                                    <div class="color-hex-wrap">
+                                        <span class="color-hash">#</span>
+                                        <input type="text" id="brandingSecondaryHex" value="#a855f7" class="color-hex-pro" maxlength="7">
+                                    </div>
+                                    <button type="button" class="color-pick-btn" onclick="document.getElementById('brandingSecondary').click()" title="Abrir seletor">
+                                        <i class="fas fa-eye-dropper"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="color-card" data-color="accent">
+                                <div class="color-card-header">
+                                    <div class="color-swatch-ring" id="swatchAccent" style="--swatch-color:#5b21b6">
+                                        <div class="color-swatch-inner"></div>
+                                    </div>
+                                    <div class="color-card-info">
+                                        <span class="color-card-title">Cor de Destaque</span>
+                                        <span class="color-card-desc">Sombras, hover, fundo escuro e contraste</span>
+                                    </div>
+                                </div>
+                                <div class="color-card-controls">
+                                    <input type="color" id="brandingAccent" value="#5b21b6" class="color-picker-hidden">
+                                    <div class="color-hex-wrap">
+                                        <span class="color-hash">#</span>
+                                        <input type="text" id="brandingAccentHex" value="#5b21b6" class="color-hex-pro" maxlength="7">
+                                    </div>
+                                    <button type="button" class="color-pick-btn" onclick="document.getElementById('brandingAccent').click()" title="Abrir seletor">
+                                        <i class="fas fa-eye-dropper"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Paleta Visual em Tempo Real -->
+                        <div class="palette-live-preview">
+                            <div class="palette-label"><i class="fas fa-layer-group"></i> Sua Paleta Atual</div>
+                            <div class="palette-strips" id="paletteStrips">
+                                <div class="palette-strip" id="stripAccent" title="Destaque"><span></span></div>
+                                <div class="palette-strip" id="stripPrimary" title="Principal"><span></span></div>
+                                <div class="palette-strip" id="stripSecondary" title="Secundária"><span></span></div>
+                                <div class="palette-strip palette-strip-light" id="stripLight" title="Claro"><span></span></div>
+                            </div>
+                        </div>
+
+                        <!-- Temas Predefinidos Pro -->
+                        <div class="color-presets-pro">
+                            <div class="presets-header">
+                                <span class="presets-title"><i class="fas fa-magic"></i> Temas Predefinidos</span>
+                                <span class="presets-subtitle">Clique para aplicar instantaneamente</span>
+                            </div>
+                            <div class="presets-grid">
+                                <button type="button" class="preset-card" data-p="#7c3aed" data-s="#a855f7" data-a="#5b21b6" title="Roxo Neon">
+                                    <div class="preset-gradient" style="background:linear-gradient(135deg,#5b21b6,#7c3aed,#a855f7)"></div>
+                                    <div class="preset-swatches">
+                                        <span style="background:#5b21b6"></span>
+                                        <span style="background:#7c3aed"></span>
+                                        <span style="background:#a855f7"></span>
+                                    </div>
+                                    <span class="preset-name">Roxo Neon</span>
+                                </button>
+                                <button type="button" class="preset-card" data-p="#2563eb" data-s="#3b82f6" data-a="#1d4ed8" title="Azul Royal">
+                                    <div class="preset-gradient" style="background:linear-gradient(135deg,#1d4ed8,#2563eb,#3b82f6)"></div>
+                                    <div class="preset-swatches">
+                                        <span style="background:#1d4ed8"></span>
+                                        <span style="background:#2563eb"></span>
+                                        <span style="background:#3b82f6"></span>
+                                    </div>
+                                    <span class="preset-name">Azul Royal</span>
+                                </button>
+                                <button type="button" class="preset-card" data-p="#dc2626" data-s="#ef4444" data-a="#991b1b" title="Vermelho Fire">
+                                    <div class="preset-gradient" style="background:linear-gradient(135deg,#991b1b,#dc2626,#ef4444)"></div>
+                                    <div class="preset-swatches">
+                                        <span style="background:#991b1b"></span>
+                                        <span style="background:#dc2626"></span>
+                                        <span style="background:#ef4444"></span>
+                                    </div>
+                                    <span class="preset-name">Vermelho Fire</span>
+                                </button>
+                                <button type="button" class="preset-card" data-p="#16a34a" data-s="#22c55e" data-a="#15803d" title="Verde Esmeralda">
+                                    <div class="preset-gradient" style="background:linear-gradient(135deg,#15803d,#16a34a,#22c55e)"></div>
+                                    <div class="preset-swatches">
+                                        <span style="background:#15803d"></span>
+                                        <span style="background:#16a34a"></span>
+                                        <span style="background:#22c55e"></span>
+                                    </div>
+                                    <span class="preset-name">Verde Esmeralda</span>
+                                </button>
+                                <button type="button" class="preset-card" data-p="#ea580c" data-s="#f97316" data-a="#c2410c" title="Laranja Sunset">
+                                    <div class="preset-gradient" style="background:linear-gradient(135deg,#c2410c,#ea580c,#f97316)"></div>
+                                    <div class="preset-swatches">
+                                        <span style="background:#c2410c"></span>
+                                        <span style="background:#ea580c"></span>
+                                        <span style="background:#f97316"></span>
+                                    </div>
+                                    <span class="preset-name">Laranja Sunset</span>
+                                </button>
+                                <button type="button" class="preset-card" data-p="#0891b2" data-s="#06b6d4" data-a="#0e7490" title="Ciano Ocean">
+                                    <div class="preset-gradient" style="background:linear-gradient(135deg,#0e7490,#0891b2,#06b6d4)"></div>
+                                    <div class="preset-swatches">
+                                        <span style="background:#0e7490"></span>
+                                        <span style="background:#0891b2"></span>
+                                        <span style="background:#06b6d4"></span>
+                                    </div>
+                                    <span class="preset-name">Ciano Ocean</span>
+                                </button>
+                                <button type="button" class="preset-card" data-p="#db2777" data-s="#ec4899" data-a="#be185d" title="Rosa Flamingo">
+                                    <div class="preset-gradient" style="background:linear-gradient(135deg,#be185d,#db2777,#ec4899)"></div>
+                                    <div class="preset-swatches">
+                                        <span style="background:#be185d"></span>
+                                        <span style="background:#db2777"></span>
+                                        <span style="background:#ec4899"></span>
+                                    </div>
+                                    <span class="preset-name">Rosa Flamingo</span>
+                                </button>
+                                <button type="button" class="preset-card" data-p="#ca8a04" data-s="#eab308" data-a="#a16207" title="Dourado Premium">
+                                    <div class="preset-gradient" style="background:linear-gradient(135deg,#a16207,#ca8a04,#eab308)"></div>
+                                    <div class="preset-swatches">
+                                        <span style="background:#a16207"></span>
+                                        <span style="background:#ca8a04"></span>
+                                        <span style="background:#eab308"></span>
+                                    </div>
+                                    <span class="preset-name">Dourado Premium</span>
+                                </button>
+                                <button type="button" class="preset-card" data-p="#6366f1" data-s="#818cf8" data-a="#4338ca" title="Índigo Deep">
+                                    <div class="preset-gradient" style="background:linear-gradient(135deg,#4338ca,#6366f1,#818cf8)"></div>
+                                    <div class="preset-swatches">
+                                        <span style="background:#4338ca"></span>
+                                        <span style="background:#6366f1"></span>
+                                        <span style="background:#818cf8"></span>
+                                    </div>
+                                    <span class="preset-name">Índigo Deep</span>
+                                </button>
+                                <button type="button" class="preset-card" data-p="#059669" data-s="#34d399" data-a="#047857" title="Menta Fresh">
+                                    <div class="preset-gradient" style="background:linear-gradient(135deg,#047857,#059669,#34d399)"></div>
+                                    <div class="preset-swatches">
+                                        <span style="background:#047857"></span>
+                                        <span style="background:#059669"></span>
+                                        <span style="background:#34d399"></span>
+                                    </div>
+                                    <span class="preset-name">Menta Fresh</span>
+                                </button>
+                                <button type="button" class="preset-card" data-p="#e11d48" data-s="#fb7185" data-a="#9f1239" title="Cereja Dark">
+                                    <div class="preset-gradient" style="background:linear-gradient(135deg,#9f1239,#e11d48,#fb7185)"></div>
+                                    <div class="preset-swatches">
+                                        <span style="background:#9f1239"></span>
+                                        <span style="background:#e11d48"></span>
+                                        <span style="background:#fb7185"></span>
+                                    </div>
+                                    <span class="preset-name">Cereja Dark</span>
+                                </button>
+                                <button type="button" class="preset-card" data-p="#7c3aed" data-s="#f97316" data-a="#4c1d95" title="Roxo & Laranja">
+                                    <div class="preset-gradient" style="background:linear-gradient(135deg,#4c1d95,#7c3aed,#f97316)"></div>
+                                    <div class="preset-swatches">
+                                        <span style="background:#4c1d95"></span>
+                                        <span style="background:#7c3aed"></span>
+                                        <span style="background:#f97316"></span>
+                                    </div>
+                                    <span class="preset-name">Roxo & Laranja</span>
+                                </button>
+                                <button type="button" class="preset-card" data-p="#0ea5e9" data-s="#38bdf8" data-a="#0369a1" title="Azul Céu">
+                                    <div class="preset-gradient" style="background:linear-gradient(135deg,#0369a1,#0ea5e9,#38bdf8)"></div>
+                                    <div class="preset-swatches">
+                                        <span style="background:#0369a1"></span>
+                                        <span style="background:#0ea5e9"></span>
+                                        <span style="background:#38bdf8"></span>
+                                    </div>
+                                    <span class="preset-name">Azul Céu</span>
+                                </button>
+                                <button type="button" class="preset-card" data-p="#d946ef" data-s="#e879f9" data-a="#a21caf" title="Neon Pink">
+                                    <div class="preset-gradient" style="background:linear-gradient(135deg,#a21caf,#d946ef,#e879f9)"></div>
+                                    <div class="preset-swatches">
+                                        <span style="background:#a21caf"></span>
+                                        <span style="background:#d946ef"></span>
+                                        <span style="background:#e879f9"></span>
+                                    </div>
+                                    <span class="preset-name">Neon Pink</span>
+                                </button>
+                                <button type="button" class="preset-card" data-p="#be123c" data-s="#fbbf24" data-a="#881337" title="Vermelho & Ouro">
+                                    <div class="preset-gradient" style="background:linear-gradient(135deg,#881337,#be123c,#fbbf24)"></div>
+                                    <div class="preset-swatches">
+                                        <span style="background:#881337"></span>
+                                        <span style="background:#be123c"></span>
+                                        <span style="background:#fbbf24"></span>
+                                    </div>
+                                    <span class="preset-name">Vermelho & Ouro</span>
+                                </button>
+                                <button type="button" class="preset-card" data-p="#475569" data-s="#94a3b8" data-a="#1e293b" title="Cinza Elegante">
+                                    <div class="preset-gradient" style="background:linear-gradient(135deg,#1e293b,#475569,#94a3b8)"></div>
+                                    <div class="preset-swatches">
+                                        <span style="background:#1e293b"></span>
+                                        <span style="background:#475569"></span>
+                                        <span style="background:#94a3b8"></span>
+                                    </div>
+                                    <span class="preset-name">Cinza Elegante</span>
+                                </button>
+                                <button type="button" class="preset-card" data-p="#2563eb" data-s="#06b6d4" data-a="#1e40af" title="Azul & Ciano">
+                                    <div class="preset-gradient" style="background:linear-gradient(135deg,#1e40af,#2563eb,#06b6d4)"></div>
+                                    <div class="preset-swatches">
+                                        <span style="background:#1e40af"></span>
+                                        <span style="background:#2563eb"></span>
+                                        <span style="background:#06b6d4"></span>
+                                    </div>
+                                    <span class="preset-name">Azul & Ciano</span>
+                                </button>
+                                <button type="button" class="preset-card" data-p="#84cc16" data-s="#a3e635" data-a="#4d7c0f" title="Lima Neon">
+                                    <div class="preset-gradient" style="background:linear-gradient(135deg,#4d7c0f,#84cc16,#a3e635)"></div>
+                                    <div class="preset-swatches">
+                                        <span style="background:#4d7c0f"></span>
+                                        <span style="background:#84cc16"></span>
+                                        <span style="background:#a3e635"></span>
+                                    </div>
+                                    <span class="preset-name">Lima Neon</span>
+                                </button>
+                                <button type="button" class="preset-card" data-p="#f43f5e" data-s="#a855f7" data-a="#e11d48" title="Rosa & Roxo">
+                                    <div class="preset-gradient" style="background:linear-gradient(135deg,#e11d48,#f43f5e,#a855f7)"></div>
+                                    <div class="preset-swatches">
+                                        <span style="background:#e11d48"></span>
+                                        <span style="background:#f43f5e"></span>
+                                        <span style="background:#a855f7"></span>
+                                    </div>
+                                    <span class="preset-name">Rosa & Roxo</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ROW 3: Cores de Fundo Avançadas (full width) -->
+                    <div class="settings-card full-width">
+                        <div class="settings-card-head">
+                            <div class="sc-icon" style="background:linear-gradient(135deg,#1e293b,#334155)"><i class="fas fa-fill-drip"></i></div>
+                            <div>
+                                <h3>Cores de Fundo (Avançado)</h3>
+                                <p>Personalize as cores de fundo, cards e textos do sistema</p>
+                            </div>
+                        </div>
+                        <!-- Temas de fundo prontos -->
+                        <div class="bg-theme-presets">
+                            <label style="font-size:13px;font-weight:600;color:#fff;margin-bottom:8px;display:block"><i class="fas fa-swatchbook"></i> Temas de Fundo Prontos</label>
+                            <div class="bg-presets-row">
+                                <button type="button" class="bg-preset-btn" onclick="applyBgPreset('#050509','#08080d','#0c0c14','#f5f5fa','#9898a8','#18182a')" title="Escuro Padrão">
+                                    <span class="bg-preset-swatch" style="background:#050509;border:1px solid #333"></span> Escuro Padrão
+                                </button>
+                                <button type="button" class="bg-preset-btn" onclick="applyBgPreset('#000000','#050508','#0a0a12','#ffffff','#b0b0c0','#151525')" title="AMOLED Preto Puro">
+                                    <span class="bg-preset-swatch" style="background:#000000;border:1px solid #333"></span> AMOLED Puro
+                                </button>
+                                <button type="button" class="bg-preset-btn" onclick="applyBgPreset('#0f172a','#1e293b','#334155','#f1f5f9','#94a3b8','#475569')" title="Azul Meia-noite">
+                                    <span class="bg-preset-swatch" style="background:#0f172a;border:1px solid #475569"></span> Azul Noite
+                                </button>
+                                <button type="button" class="bg-preset-btn" onclick="applyBgPreset('#1a1a2e','#16213e','#0f3460','#e0e0f0','#8888aa','#2a2a4a')" title="Índigo Profundo">
+                                    <span class="bg-preset-swatch" style="background:#1a1a2e;border:1px solid #444"></span> Índigo Deep
+                                </button>
+                                <button type="button" class="bg-preset-btn" onclick="applyBgPreset('#0c0a09','#1c1917','#292524','#fafaf9','#a8a29e','#44403c')" title="Marrom Elegante">
+                                    <span class="bg-preset-swatch" style="background:#0c0a09;border:1px solid #44403c"></span> Marrom Dark
+                                </button>
+                                <button type="button" class="bg-preset-btn" onclick="applyBgPreset('#09090b','#18181b','#27272a','#fafafa','#a1a1aa','#3f3f46')" title="Cinza Neutro">
+                                    <span class="bg-preset-swatch" style="background:#09090b;border:1px solid #3f3f46"></span> Cinza Neutro
+                                </button>
+                            </div>
+                        </div>
+                        <div class="advanced-colors-grid">
+                            <div class="adv-color-item">
+                                <label>Fundo Principal</label>
+                                <div class="adv-color-row">
+                                    <input type="color" id="brandingBgPrimary" value="#050509">
+                                    <input type="text" id="brandingBgPrimaryHex" value="050509" maxlength="6" placeholder="050509">
+                                </div>
+                            </div>
+                            <div class="adv-color-item">
+                                <label>Fundo Secundário</label>
+                                <div class="adv-color-row">
+                                    <input type="color" id="brandingBgSecondary" value="#0a0a10">
+                                    <input type="text" id="brandingBgSecondaryHex" value="0a0a10" maxlength="6" placeholder="0a0a10">
+                                </div>
+                            </div>
+                            <div class="adv-color-item">
+                                <label>Cor dos Cards</label>
+                                <div class="adv-color-row">
+                                    <input type="color" id="brandingBgCard" value="#0f0f17">
+                                    <input type="text" id="brandingBgCardHex" value="0f0f17" maxlength="6" placeholder="0f0f17">
+                                </div>
+                            </div>
+                            <div class="adv-color-item">
+                                <label>Cor do Texto</label>
+                                <div class="adv-color-row">
+                                    <input type="color" id="brandingTextColor" value="#f0f0f5">
+                                    <input type="text" id="brandingTextColorHex" value="f0f0f5" maxlength="6" placeholder="f0f0f5">
+                                </div>
+                            </div>
+                            <div class="adv-color-item">
+                                <label>Texto Secundário</label>
+                                <div class="adv-color-row">
+                                    <input type="color" id="brandingTextSecondary" value="#a0a0b0">
+                                    <input type="text" id="brandingTextSecondaryHex" value="a0a0b0" maxlength="6" placeholder="a0a0b0">
+                                </div>
+                            </div>
+                            <div class="adv-color-item">
+                                <label>Cor das Bordas</label>
+                                <div class="adv-color-row">
+                                    <input type="color" id="brandingBorderColor" value="#1a1a2e">
+                                    <input type="text" id="brandingBorderColorHex" value="1a1a2e" maxlength="6" placeholder="1a1a2e">
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-outline-sm" onclick="resetAdvancedColors()" style="margin-top:16px">
+                            <i class="fas fa-undo"></i> Restaurar Cores de Fundo Padrão
+                        </button>
+                    </div>
+
+                    <!-- ROW 4: WhatsApp + Criar Conta (lado a lado) -->
+                    <div class="settings-grid-row">
+                        <!-- Botão WhatsApp -->
+                        <div class="settings-card" id="whatsappCard">
+                            <div class="settings-card-head">
+                                <div class="sc-icon" style="background:linear-gradient(135deg,#25d366,#128c7e)"><i class="fab fa-whatsapp"></i></div>
+                                <div style="flex:1">
+                                    <h3>Suporte WhatsApp</h3>
+                                    <p>Botão flutuante de suporte na tela de login</p>
+                                </div>
+                                <span class="status-badge status-off" id="whatsappBadge">Desativado</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="switch-label">
+                                    <input type="checkbox" id="whatsappEnabled" class="switch-input" onchange="toggleCardState('whatsapp')">
+                                    <span class="switch-slider"></span>
+                                    <span class="switch-text">Ativar botão WhatsApp no login</span>
+                                </label>
+                            </div>
+                            <div class="toggle-fields" id="whatsappFields" style="opacity:0.4;pointer-events:none">
+                                <div class="form-group">
+                                    <label>Número do WhatsApp</label>
+                                    <div class="input-wrap wa-number-wrap">
+                                        <span class="wa-country-flag">🇧🇷 +55</span>
+                                        <input type="text" id="whatsappNumber" placeholder="11 9 9999-9999" oninput="formatWhatsappNumber(this)">
+                                    </div>
+                                    <small class="form-hint">Insira o DDD + número. Ex: 11 9 9999-9999</small>
+                                </div>
+                                <div class="form-group">
+                                    <label>Mensagem Padrão</label>
+                                    <div class="input-wrap">
+                                        <i class="fas fa-comment"></i>
+                                        <input type="text" id="whatsappMessage" placeholder="Olá! Preciso de ajuda com o WebPlay">
+                                    </div>
+                                    <small class="form-hint">Mensagem pré-preenchida ao clicar no botão</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Criar Conta -->
+                        <div class="settings-card" id="signupCard">
+                            <div class="settings-card-head">
+                                <div class="sc-icon" style="background:linear-gradient(135deg,#10b981,#059669)"><i class="fas fa-user-plus"></i></div>
+                                <div style="flex:1">
+                                    <h3>Criar Conta</h3>
+                                    <p>Botão "Crie uma conta agora" na tela de login</p>
+                                </div>
+                                <span class="status-badge status-off" id="signupBadge">Desativado</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="switch-label">
+                                    <input type="checkbox" id="signupEnabled" class="switch-input" onchange="toggleCardState('signup')">
+                                    <span class="switch-slider"></span>
+                                    <span class="switch-text">Exibir botão "Crie uma conta" no login</span>
+                                </label>
+                            </div>
+                            <div class="toggle-fields" id="signupFields" style="opacity:0.4;pointer-events:none">
+                                <div class="form-group">
+                                    <label>Mensagem do WhatsApp para nova conta</label>
+                                    <div class="input-wrap">
+                                        <i class="fas fa-comment-dots"></i>
+                                        <input type="text" id="signupMessage" placeholder="Olá! Quero criar uma conta no WebPlay">
+                                    </div>
+                                    <small class="form-hint">Usa o número do WhatsApp configurado ao lado</small>
+                                </div>
+                                <div class="form-group">
+                                    <label><i class="fas fa-shopping-cart" style="color:#f59e0b;margin-right:6px"></i> URL do Checkout (Teste Grátis)</label>
+                                    <div class="input-wrap">
+                                        <i class="fas fa-link"></i>
+                                        <input type="text" id="checkoutUrl" placeholder="https://seu-checkout.com/assinar">
+                                    </div>
+                                    <small class="form-hint">Link do botão "Assinar Agora" exibido para contas em período de teste</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ROW 5: Intro -->
+                    <div class="settings-grid-row">
+                        <!-- Intro de Abertura -->
+                        <div class="settings-card">
+                            <div class="settings-card-head">
+                                <div class="sc-icon" style="background:linear-gradient(135deg,#e50914,#b81d24)"><i class="fas fa-film"></i></div>
+                                <div>
+                                    <h3>Intro de Abertura</h3>
+                                    <p>Animação estilo Netflix antes de iniciar filmes/séries</p>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="switch-label">
+                                    <input type="checkbox" id="introEnabled" class="switch-input">
+                                    <span class="switch-slider"></span>
+                                    <span class="switch-text">Ativar intro de abertura</span>
+                                </label>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Duração</label>
+                                    <select id="introDuration" class="form-select">
+                                        <option value="2">2 segundos</option>
+                                        <option value="3" selected>3 segundos</option>
+                                        <option value="5">5 segundos</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Estilo da Animação</label>
+                                    <select id="introStyle" class="form-select">
+                                        <option value="netflix">Netflix (Zoom + Glow)</option>
+                                        <option value="fade">Fade Elegante</option>
+                                        <option value="zoom">Zoom Dramático</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="intro-preview-box">
+                                <button type="button" class="btn-outline-sm" onclick="previewIntro()">
+                                    <i class="fas fa-play"></i> Pré-visualizar Intro
+                                </button>
+                            </div>
+                        </div>
+                    </div><!-- END ROW 4 -->
+
+                </div><!-- END settings-grid -->
+
+                <div class="branding-save-bar">
+                    <button type="button" class="btn-outline-sm" onclick="resetBrandingColors()" title="Restaurar cores padrão">
+                        <i class="fas fa-undo"></i> Restaurar Padrão
+                    </button>
+                    <button class="btn-primary btn-lg" onclick="saveBranding()">
+                        <i class="fas fa-save"></i> Salvar Personalização
+                    </button>
+                </div>
+            </section>
+
+            <!-- ======= CONFIGURAÇÕES ======= -->
+            <section class="page" id="page-settings">
+                <div class="page-header">
+                    <h2><i class="fas fa-cog"></i> Configurações</h2>
+                    <p>Configurações do painel administrativo</p>
+                </div>
+
+                <div class="settings-grid">
+                    <!-- Alterar Senha -->
+                    <div class="settings-card">
+                        <div class="settings-card-head">
+                            <div class="sc-icon"><i class="fas fa-key"></i></div>
+                            <div>
+                                <h3>Alterar Senha</h3>
+                                <p>Altere a senha de acesso ao painel</p>
+                            </div>
+                        </div>
+                        <form id="changePassForm" onsubmit="changePassword(event)">
+                            <div class="form-group">
+                                <label>Senha Atual</label>
+                                <div class="input-wrap">
+                                    <i class="fas fa-lock"></i>
+                                    <input type="password" id="currentPass" placeholder="Senha atual" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Nova Senha</label>
+                                <div class="input-wrap">
+                                    <i class="fas fa-lock"></i>
+                                    <input type="password" id="newPass" placeholder="Nova senha" required minlength="4">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Confirmar Nova Senha</label>
+                                <div class="input-wrap">
+                                    <i class="fas fa-lock"></i>
+                                    <input type="password" id="confirmPass" placeholder="Confirme a nova senha" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-save"></i> Salvar Nova Senha
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Info -->
+                    <div class="settings-card">
+                        <div class="settings-card-head">
+                            <div class="sc-icon"><i class="fas fa-info-circle"></i></div>
+                            <div>
+                                <h3>Informações do Sistema</h3>
+                                <p>Dados sobre a instalação</p>
+                            </div>
+                        </div>
+                        <div class="info-list">
+                            <div class="info-row">
+                                <span>Versão</span>
+                                <strong>2.0.0</strong>
+                            </div>
+                            <div class="info-row">
+                                <span>Plataforma</span>
+                                <strong class="brand-name-info">WebPlay</strong>
+                            </div>
+                            <div class="info-row">
+                                <span>URL WebPlay</span>
+                                <strong><a href="../" id="infoUrlWebplay">—</a></strong>
+                            </div>
+                            <div class="info-row">
+                                <span>URL Admin</span>
+                                <strong><a href="./" id="infoUrlAdmin">—</a></strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ===== MODAL SERVIDOR ===== -->
+    <div class="modal-overlay" id="serverModal" style="display:none">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 id="serverModalTitle"><i class="fas fa-server"></i> Adicionar Servidor</h3>
+                <button class="modal-close" onclick="closeServerModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="serverForm" onsubmit="saveServer(event)">
+                <input type="hidden" id="serverId">
+                <div class="form-group">
+                    <label>Nome do Servidor</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-tag"></i>
+                        <input type="text" id="serverName" placeholder="Ex: Servidor Principal">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>URL / DNS do Servidor <span class="required">*</span></label>
+                    <div class="input-wrap">
+                        <i class="fas fa-globe"></i>
+                        <input type="text" id="serverUrl" placeholder="Ex: http://meuservidor.com" required>
+                    </div>
+                    <small class="form-hint">Informe a URL completa ou apenas o domínio. Ex: meuapp.top</small>
+                </div>
+                <div class="form-group">
+                    <label class="toggle-label">
+                        <span>Servidor Ativo</span>
+                        <label class="switch">
+                            <input type="checkbox" id="serverEnabled" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </label>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="testServerUrl()">
+                        <i class="fas fa-wifi"></i> Testar Conexão
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-save"></i> Salvar
+                    </button>
+                </div>
+                <div class="test-result" id="testResult" style="display:none"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== CONFIRM DIALOG ===== -->
+    <div class="modal-overlay" id="confirmModal" style="display:none">
+        <div class="modal-box modal-confirm">
+            <div class="confirm-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3 id="confirmTitle">Confirmar</h3>
+            <p id="confirmText">Tem certeza?</p>
+            <div class="confirm-actions">
+                <button class="btn-secondary" onclick="closeConfirm()">Cancelar</button>
+                <button class="btn-danger" id="confirmBtn" onclick="confirmAction()">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL APP / APK ===== -->
+    <div class="modal-overlay" id="appModal" style="display:none">
+        <div class="modal-box modal-app">
+            <div class="modal-header">
+                <h3 id="appModalTitle"><i class="fas fa-cloud-upload-alt"></i> Publicar App</h3>
+                <button class="modal-close" onclick="closeAppModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="appForm" onsubmit="saveApp(event)" enctype="multipart/form-data">
+                <input type="hidden" id="appId">
+                <div class="form-group">
+                    <label>Nome do App <span class="required">*</span></label>
+                    <div class="input-wrap">
+                        <i class="fas fa-mobile-alt"></i>
+                        <input type="text" id="appName" placeholder="Ex: WebPlay TV" required>
+                    </div>
+                </div>
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label>Versão</label>
+                        <div class="input-wrap">
+                            <i class="fas fa-code-branch"></i>
+                            <input type="text" id="appVersion" placeholder="Ex: 1.0.0">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Plataforma</label>
+                        <div class="input-wrap">
+                            <i class="fas fa-microchip"></i>
+                            <select id="appPlatform">
+                                <option value="android">Android (APK)</option>
+                                <option value="android-tv">Android TV</option>
+                                <option value="firestick">Fire Stick</option>
+                                <option value="windows">Windows</option>
+                                <option value="ios">iOS</option>
+                                <option value="other">Outro</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <div class="input-wrap input-wrap-area">
+                        <textarea id="appDescription" placeholder="Descrição do aplicativo..." rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>URL do Ícone (opcional)</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-image"></i>
+                        <input type="text" id="appIcon" placeholder="https://... URL da imagem do ícone">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Arquivo APK / Executável <span class="required">*</span></label>
+                    <div class="upload-area" id="uploadArea">
+                        <input type="file" id="appFile" accept=".apk,.exe,.zip,.ipa,.msi,.dmg,.xapk" onchange="handleFileSelect(this)">
+                        <div class="upload-content" id="uploadContent">
+                            <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                            <p class="upload-text">Arraste o arquivo ou <strong>clique para selecionar</strong></p>
+                            <span class="upload-hint">APK, EXE, ZIP, IPA • Máx 500MB</span>
+                        </div>
+                        <div class="upload-file-info" id="uploadFileInfo" style="display:none">
+                            <div class="ufi-icon"><i class="fas fa-file-archive"></i></div>
+                            <div class="ufi-details">
+                                <span class="ufi-name" id="ufiName">—</span>
+                                <span class="ufi-size" id="ufiSize">—</span>
+                            </div>
+                            <button type="button" class="ufi-remove" onclick="clearFileSelect()"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                    <div class="upload-progress" id="uploadProgress" style="display:none">
+                        <div class="upload-progress-bar">
+                            <div class="upload-progress-fill" id="uploadProgressFill"></div>
+                        </div>
+                        <span class="upload-progress-text" id="uploadProgressText">0%</span>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeAppModal()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn-primary" id="btnSaveApp">
+                        <i class="fas fa-cloud-upload-alt"></i> Publicar App
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toastContainer"></div>
+
+    <script src="js/admin.js"></script>
+</body>
+</html>
