@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Heart, Play, RotateCcw, SkipForward } from 'lucide-react';
+import { ArrowLeft, Heart, Play, RotateCcw, SkipForward, Star } from 'lucide-react';
 import CatalogError from '../../components/viewer/CatalogError.jsx';
 import PlayerFrame from '../../components/viewer/PlayerFrame.jsx';
 import { contentRef, episodePath, formatClock } from '../../components/viewer/content.js';
@@ -33,6 +33,33 @@ function EpgList({ streamId, serverId }) {
           ))}
         </ul>
       )}
+    </section>
+  );
+}
+
+function InfoPanel({ poster, details }) {
+  if (!details) return null;
+  const meta = [details.rating > 0 ? details.rating.toFixed(1) : null, details.duration, details.releaseDate].filter(Boolean);
+  return (
+    <section aria-label="Sobre" className="mt-6 flex gap-4 px-4 sm:px-0">
+      {poster && (
+        <img src={poster} alt="" loading="lazy" referrerPolicy="no-referrer" className="hidden h-44 w-28 shrink-0 rounded-lg object-cover shadow-xl ring-1 ring-fg/15 sm:block" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+      )}
+      <div className="min-w-0 flex-1 space-y-2">
+        {meta.length > 0 && (
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-fg/70">
+            {details.rating > 0 && <span className="inline-flex items-center gap-1 text-amber-400"><Star className="h-3.5 w-3.5 fill-current" aria-hidden />{details.rating.toFixed(1)}</span>}
+            {details.duration && <span>{details.duration}</span>}
+            {details.releaseDate && <span>{details.releaseDate}</span>}
+          </p>
+        )}
+        {details.plot ? <p className="text-sm leading-relaxed text-fg/85">{details.plot}</p> : <p className="text-sm text-fg/50">Sinopse não disponível na fonte.</p>}
+        <dl className="space-y-1 pt-1 text-sm">
+          {details.cast && <div><dt className="inline text-fg/50">Elenco: </dt><dd className="inline text-fg/80">{details.cast}</dd></div>}
+          {details.director && <div><dt className="inline text-fg/50">Direção: </dt><dd className="inline text-fg/80">{details.director}</dd></div>}
+          {details.genre && <div><dt className="inline text-fg/50">Gêneros: </dt><dd className="inline text-fg/80">{details.genre}</dd></div>}
+        </dl>
+      </div>
     </section>
   );
 }
@@ -101,6 +128,8 @@ export default function Watch() {
   );
   const play = state.data && String(state.data.stream.id) === streamId ? state.data : null;
   const seriesInfo = useAsync(() => (isSeries ? svc.details('series', streamId, serverId) : Promise.resolve(null)), [svc, isSeries, streamId, serverId]);
+  const vodInfo = useAsync(() => (!isSeries && type !== 'live' ? svc.details('vod', streamId, serverId) : Promise.resolve(null)), [svc, isSeries, type, streamId, serverId]);
+  const details = isSeries ? seriesInfo.data?.details : vodInfo.data?.details;
   useTitle(play ? `${play.stream.name} — ${tenant.brand.displayName}` : tenant.brand.displayName);
 
   useEffect(() => {
@@ -236,6 +265,7 @@ export default function Watch() {
             </div>
 
             {live && <EpgList streamId={streamId} serverId={play.serverId} />}
+            {!live && <InfoPanel poster={details?.cover || play.stream.icon} details={details} />}
             {isSeries && <Episodes details={seriesInfo.data?.details} seriesId={streamId} serverId={play.serverId} currentId={episodeId} />}
 
             <p className="px-4 pt-6 text-xs text-fg/40 sm:px-0">
