@@ -16,8 +16,22 @@ const fmtTime = (iso) => (iso ? new Date(iso).toLocaleTimeString('pt-BR', { hour
 function EpgList({ streamId, serverId }) {
   const { svc } = useViewer();
   const epg = useAsync(() => svc.epg(streamId, serverId), [svc, streamId, serverId]);
-  const now = Date.now();
+  const { reload } = epg;
+  const [now, setNow] = useState(() => Date.now());
+
+  // Mantém a programação "ao vivo": reavalia o que está no ar a cada 20s e busca dados novos a cada minuto.
+  useEffect(() => {
+    const tick = setInterval(() => setNow(Date.now()), 20_000);
+    const refresh = setInterval(() => reload(), 60_000);
+    return () => {
+      clearInterval(tick);
+      clearInterval(refresh);
+    };
+  }, [reload]);
+
   const items = (epg.data?.items ?? []).filter((e) => !e.end || new Date(e.end).getTime() > now);
+  const isNow = (e) => e.start && e.end && new Date(e.start).getTime() <= now && new Date(e.end).getTime() > now;
+  const progressOf = (e) => Math.min(100, Math.max(0, ((now - new Date(e.start).getTime()) / (new Date(e.end).getTime() - new Date(e.start).getTime())) * 100));
   return (
     <section aria-label="Programação" className="mt-6 px-4 sm:px-0">
       <h2 className="mb-2 text-sm font-semibold text-fg/80">Programação</h2>
@@ -26,9 +40,20 @@ function EpgList({ streamId, serverId }) {
       ) : (
         <ul className="divide-y divide-fg/10 overflow-hidden rounded-lg border border-fg/10 text-sm">
           {items.map((e, i) => (
-            <li key={i} className="flex gap-3 px-3 py-2">
+            <li key={`${e.start}-${i}`} className={`flex gap-3 px-3 py-2 ${isNow(e) ? 'bg-primary/10' : ''}`}>
               <span className="w-24 shrink-0 text-xs text-fg/50">{fmtTime(e.start)}{e.end ? ` – ${fmtTime(e.end)}` : ''}</span>
-              <span className="min-w-0"><span className="block truncate font-medium">{e.title}</span>{e.description && <span className="line-clamp-2 block text-xs text-fg/60">{e.description}</span>}</span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-2">
+                  {isNow(e) && <span className="shrink-0 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">Agora</span>}
+                  <span className="block truncate font-medium">{e.title}</span>
+                </span>
+                {e.description && <span className="line-clamp-2 block text-xs text-fg/60">{e.description}</span>}
+                {isNow(e) && (
+                  <span className="mt-1.5 block h-1 overflow-hidden rounded bg-fg/15" aria-hidden>
+                    <span className="block h-full bg-primary transition-all" style={{ width: `${progressOf(e)}%` }} />
+                  </span>
+                )}
+              </span>
             </li>
           ))}
         </ul>

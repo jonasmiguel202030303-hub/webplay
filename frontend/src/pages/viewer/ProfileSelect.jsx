@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Pencil, Plus } from 'lucide-react';
 import BrandLogo from '../../components/viewer/BrandLogo.jsx';
+import SoundToggle from '../../components/viewer/SoundToggle.jsx';
+import { playProfileSound } from '../../utils/sound.js';
 import ProfileAvatar, { AVATAR_GROUPS, DEFAULT_AVATAR } from '../../components/viewer/ProfileAvatar.jsx';
 import { ConfirmDialog } from '../../components/ui/Modal.jsx';
 import { Alert } from '../../components/ui/Feedback.jsx';
@@ -137,6 +139,7 @@ export default function ProfileSelect() {
   const canAdd = profiles.length < (tenant.maxProfilesPerViewer ?? 5);
 
   const choose = (p) => {
+    playProfileSound();
     selectProfile(p.id);
     navigate(target, { replace: true });
   };
@@ -159,8 +162,9 @@ export default function ProfileSelect() {
 
   return (
     <div className="flex min-h-screen flex-col bg-bg">
-      <header className="px-6 py-5 sm:px-10">
+      <header className="flex items-center justify-between gap-3 px-6 py-5 sm:px-10">
         <BrandLogo className="text-xl" imgClassName="h-10 max-w-[200px]" />
+        <SoundToggle />
       </header>
 
       {editing !== null ? (

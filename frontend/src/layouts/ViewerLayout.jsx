@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Clock, Heart, Home, LogOut, Search, Tv, User, Users, Film, Clapperboard } from 'lucide-react';
+import { Clock, Heart, Home, LogOut, Search, Tv, User, Users, Film, Clapperboard, Volume2, VolumeX } from 'lucide-react';
 import BrandLogo from '../components/viewer/BrandLogo.jsx';
 import ProfileAvatar from '../components/viewer/ProfileAvatar.jsx';
 import { ContentModalProvider } from '../components/viewer/ContentModal.jsx';
+import WhatsAppFloat from '../components/WhatsAppFloat.jsx';
+import { setSoundEnabled, playPreview, useSoundEnabled } from '../utils/sound.js';
 import { useViewer } from '../contexts/ViewerContext.jsx';
 
 const NAV = [
@@ -20,6 +22,7 @@ function ProfileMenu() {
   const { slug, profile, viewer, logout } = useViewer();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const soundOn = useSoundEnabled();
   const ref = useRef(null);
 
   useEffect(() => {
@@ -54,6 +57,18 @@ function ProfileMenu() {
           <button type="button" role="menuitem" className={item} onClick={() => go(`/${slug}/perfis`)}><Users className="h-4 w-4" /> Trocar perfil</button>
           <button type="button" role="menuitem" className={item} onClick={() => go(`/${slug}/historico`)}><Clock className="h-4 w-4" /> Histórico</button>
           <button type="button" role="menuitem" className={item} onClick={() => go(`/${slug}/conta`)}><User className="h-4 w-4" /> Minha conta</button>
+          <button
+            type="button"
+            role="menuitemcheckbox"
+            aria-checked={soundOn}
+            className={item}
+            onClick={() => {
+              setSoundEnabled(!soundOn);
+              if (!soundOn) playPreview();
+            }}
+          >
+            {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />} Som: {soundOn ? 'ligado' : 'desligado'}
+          </button>
           <button
             type="button"
             role="menuitem"
@@ -165,6 +180,7 @@ export default function ViewerLayout() {
           </NavLink>
         ))}
       </nav>
+      {!watching && <WhatsAppFloat phone={brand.whatsapp} message={`Olá! Preciso de ajuda com ${brand.displayName}.`} className="bottom-20 right-4 md:bottom-6 md:right-6" />}
     </div>
     </ContentModalProvider>
   );

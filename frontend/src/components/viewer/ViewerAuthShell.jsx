@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
 import { api } from '../../services/api.js';
 import { useViewer } from '../../contexts/ViewerContext.jsx';
+import WhatsAppFloat from '../WhatsAppFloat.jsx';
 
 const DARK = { '--c-bg': '0 0 0', '--c-fg': '255 255 255' };
 const waLink = (n) => `https://wa.me/${String(n).replace(/\D/g, '')}`;
@@ -85,6 +86,7 @@ export default function ViewerAuthShell({ title, subtitle, children, footer }) {
           </p>
         </footer>
       </div>
+      <WhatsAppFloat phone={brand.whatsapp} message={`Olá! Preciso de ajuda com ${brand.displayName}.`} />
     </div>
   );
 }

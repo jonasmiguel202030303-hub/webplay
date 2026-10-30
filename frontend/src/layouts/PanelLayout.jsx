@@ -3,6 +3,8 @@ import StaffShell from './StaffShell.jsx';
 import NotificationsBell from '../components/NotificationsBell.jsx';
 import SubscriptionBanner from '../components/SubscriptionBanner.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import WhatsAppFloat from '../components/WhatsAppFloat.jsx';
+import { usePlatform } from '../hooks/usePlatform.js';
 
 const ITEMS = [
   { to: '/painel', label: 'Visão geral', icon: LayoutDashboard, end: true },
@@ -18,7 +20,9 @@ const ITEMS = [
 
 export default function PanelLayout() {
   const { tenant } = useAuth();
+  const platform = usePlatform();
   return (
+    <>
     <StaffShell
       items={ITEMS}
       title={tenant?.displayName ?? 'Painel'}
@@ -35,5 +39,7 @@ export default function PanelLayout() {
         </div>
       }
     />
+    <WhatsAppFloat phone={platform?.supportWhatsapp} message="Olá! Sou cliente do WebPlay Brasil e preciso de ajuda." className="bottom-5 right-5 print:hidden" />
+    </>
   );
 }

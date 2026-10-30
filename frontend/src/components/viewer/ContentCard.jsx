@@ -1,6 +1,15 @@
 import { useState } from 'react';
-import { Play, Radio, Star } from 'lucide-react';
+import { Play, Star } from 'lucide-react';
 import { useContentModal } from './contentModalContext.js';
+
+/** Cores fixas por nome: canais sem logotipo ganham um "quadro" com as iniciais, em vez de um ícone genérico. */
+const initialsOf = (name) => {
+  const words = String(name ?? '').replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter(Boolean);
+  const first = words.find((w) => !/^(hd|sd|fhd|4k|tv)$/i.test(w)) ?? words[0] ?? '?';
+  const second = words.find((w) => w !== first && !/^(hd|sd|fhd|4k|tv)$/i.test(w));
+  return (second ? first[0] + second[0] : first.slice(0, 2)).toUpperCase();
+};
+const hueOf = (name) => [...String(name ?? '')].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
 
 /** Cartão de conteúdo (canal 16:9, filme/série em pôster 2:3). Ao clicar abre o modal de detalhes/reprodução. */
 export default function ContentCard({ content, className = '' }) {
@@ -29,9 +38,14 @@ export default function ContentCard({ content, className = '' }) {
             onError={() => setBroken(true)}
             className={`h-full w-full ${live ? 'object-contain p-3' : 'object-cover'}`}
           />
+        ) : live ? (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-0.5 p-2 text-center text-white" style={{ background: `linear-gradient(135deg, hsl(${hueOf(content.name)} 55% 30%), hsl(${(hueOf(content.name) + 40) % 360} 60% 18%))` }}>
+            <span className="text-2xl font-extrabold tracking-wide">{initialsOf(content.name)}</span>
+            <span className="line-clamp-1 text-[11px] text-white/80">{content.name}</span>
+          </div>
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-1 p-2 text-center text-fg/50">
-            {live ? <Radio className="h-6 w-6" aria-hidden /> : <Play className="h-6 w-6" aria-hidden />}
+            <Play className="h-6 w-6" aria-hidden />
             <span className="line-clamp-3 text-xs">{content.name}</span>
           </div>
         )}

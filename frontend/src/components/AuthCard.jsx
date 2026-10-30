@@ -1,9 +1,13 @@
 import Logo from './Logo.jsx';
+import WhatsAppFloat from './WhatsAppFloat.jsx';
+import { usePlatform } from '../hooks/usePlatform.js';
 
 /** Cartão centralizado para telas de acesso (entrar, cadastro, recuperação). */
 export default function AuthCard({ title, subtitle, children, footer, wide = false }) {
+  const platform = usePlatform();
   return (
     <div className="mx-auto flex min-h-[70vh] w-full items-center justify-center px-4 py-10">
+      <WhatsAppFloat phone={platform?.supportWhatsapp} message="Olá! Preciso de ajuda com o WebPlay Brasil." />
       <div className={`w-full ${wide ? 'max-w-lg' : 'max-w-md'}`}>
         <div className="mb-6 text-center"><Logo className="text-xl" /></div>
         <div className="card p-6 sm:p-8">
