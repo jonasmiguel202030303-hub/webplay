@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Maximize2, Play, RotateCcw, Star, X } from 'lucide-react';
 import PlayerFrame from './PlayerFrame.jsx';
+import CastStrip, { EpisodeThumb } from './CastStrip.jsx';
 import { contentRef, episodePath, formatClock, TYPE_LABEL, watchPath } from './content.js';
 import { Spinner } from '../ui/Feedback.jsx';
 import { useViewer } from '../../contexts/ViewerContext.jsx';
@@ -63,36 +64,7 @@ function Meta({ items }) {
 
 const ratingNode = (r) => (r > 0 ? <><Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-hidden />{Number(r).toFixed(1)}</> : null);
 
-function CastMember({ m }) {
-  const [broken, setBroken] = useState(false);
-  const initials = m.name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
-  return (
-    <li className="w-[72px] shrink-0 text-center sm:w-20">
-      {m.photo && !broken ? (
-        <img src={m.photo} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setBroken(true)} className="mx-auto h-16 w-16 rounded-full bg-fg/10 object-cover sm:h-[72px] sm:w-[72px]" />
-      ) : (
-        <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-fg/10 text-lg font-semibold text-fg/60 sm:h-[72px] sm:w-[72px]" aria-hidden>{initials}</span>
-      )}
-      <span className="mt-1.5 line-clamp-2 block text-xs font-medium leading-tight text-fg/85">{m.name}</span>
-      {m.character && <span className="line-clamp-1 block text-[11px] leading-tight text-fg/50">{m.character}</span>}
-    </li>
-  );
-}
-
-function CastStrip({ d }) {
-  const members = d?.castList?.length
-    ? d.castList
-    : String(d?.cast ?? '').split(/[,;]/).map((n) => n.trim()).filter(Boolean).slice(0, 14).map((name) => ({ name, photo: null, character: null }));
-  if (!members.length) return null;
-  return (
-    <section aria-label="Elenco">
-      <h3 className="mb-2 text-sm font-semibold text-fg/80">Elenco</h3>
-      <ul className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-2 sm:-mx-8 sm:px-8">
-        {members.map((m, i) => <CastMember key={`${m.name}-${i}`} m={m} />)}
-      </ul>
-    </section>
-  );
-}
+const CAST_BLEED = '-mx-5 px-5 sm:-mx-8 sm:px-8';
 
 function InfoBlock({ d }) {
   if (!d) return null;
@@ -128,24 +100,11 @@ function MovieBody({ content, onClose }) {
           <>
             {d?.plot ? <p className="text-sm leading-relaxed text-fg/85">{d.plot}</p> : <p className="text-sm text-fg/50">Sinopse não disponível na fonte.</p>}
             <InfoBlock d={d} />
-            <CastStrip d={d} />
+            <CastStrip d={d} listClassName={CAST_BLEED} />
           </>
         )}
       </div>
     </>
-  );
-}
-
-function EpisodeThumb({ src }) {
-  const [broken, setBroken] = useState(false);
-  return (
-    <span className="flex h-[54px] w-24 shrink-0 items-center justify-center overflow-hidden rounded bg-fg/10 sm:h-14 sm:w-28">
-      {src && !broken ? (
-        <img src={src} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setBroken(true)} className="h-full w-full object-cover transition group-hover:brightness-110" />
-      ) : (
-        <Play className="h-5 w-5 text-fg/30" aria-hidden />
-      )}
-    </span>
   );
 }
 
@@ -182,7 +141,7 @@ function SeriesBody({ content, onClose }) {
           <>
             {d?.plot && <p className="text-sm leading-relaxed text-fg/85">{d.plot}</p>}
             <InfoBlock d={d} />
-            <CastStrip d={d} />
+            <CastStrip d={d} listClassName={CAST_BLEED} />
             {state.error && !state.data && <p className="text-sm text-red-300" role="alert">{state.error.message}</p>}
             {seasons.length === 0 && state.data && <p className="text-sm text-fg/50">Esta série ainda não tem episódios disponíveis na fonte.</p>}
             {seasons.length > 0 && (

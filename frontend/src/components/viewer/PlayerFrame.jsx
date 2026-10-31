@@ -1,8 +1,8 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { Maximize2, Minimize2, RefreshCw, TriangleAlert } from 'lucide-react';
+import { RefreshCw, TriangleAlert } from 'lucide-react';
 import Player from './Player.jsx';
 import Button from '../ui/Button.jsx';
-import { enterFullscreen, exitFullscreen, fullscreenElement } from '../../utils/fullscreen.js';
+import { enterFullscreen, exitFullscreen, fullscreenElement, lockLandscape, unlockOrientation } from '../../utils/fullscreen.js';
 
 const PLAYER_ERRORS = {
   'mixed-content': {
@@ -46,8 +46,15 @@ const PlayerFrame = forwardRef(function PlayerFrame({ play, live = false, startA
   const boxRef = useRef(null);
   const videoRef = useRef(null);
   const [fs, setFs] = useState(false);
+  // Modo de reserva: quando o navegador nega a Fullscreen API, o player ocupa a janela inteira.
+  const [fake, setFake] = useState(false);
+  const coarse = typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches;
   useEffect(() => {
-    const onChange = () => setFs(fullscreenElement() === boxRef.current);
+    const onChange = () => {
+      const on = fullscreenElement() === boxRef.current;
+      setFs(on);
+      if (!on) unlockOrientation();
+    };
     document.addEventListener('fullscreenchange', onChange);
     document.addEventListener('webkitfullscreenchange', onChange);
     return () => {
@@ -55,15 +62,27 @@ const PlayerFrame = forwardRef(function PlayerFrame({ play, live = false, startA
       document.removeEventListener('webkitfullscreenchange', onChange);
     };
   }, []);
-  const toggleFs = () => (fullscreenElement() === boxRef.current ? exitFullscreen() : enterFullscreen(boxRef.current, videoRef.current));
+  useEffect(() => {
+    if (!fake) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [fake]);
+  const toggleFs = async () => {
+    if (fake) { setFake(false); return; }
+    if (fullscreenElement() === boxRef.current) { exitFullscreen(); return; }
+    const result = await enterFullscreen(boxRef.current, videoRef.current);
+    if (result === 'element') { if (coarse) lockLandscape(); } else if (result === 'none') setFake(true);
+  };
   useImperativeHandle(ref, () => ({ requestFullscreen: toggleFs }));
   const handleReady = (video) => {
     videoRef.current = video;
     onReady?.(video);
   };
+  const full = fs || fake;
 
   return (
-    <div ref={boxRef} className={`relative aspect-video w-full overflow-hidden bg-black ${fs ? '!aspect-auto !h-full !max-h-none' : ''} ${className}`}>
+    <div ref={boxRef} className={`relative aspect-video w-full overflow-hidden bg-black ${fake ? '!fixed inset-0 z-[9999] !aspect-auto !h-full !max-h-none' : ''} ${fs ? '!aspect-auto !h-full !max-h-none' : ''} ${className}`}>
       {error ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 overflow-auto p-6 text-center text-white" role="alert">
           <TriangleAlert className="h-8 w-8 text-amber-400" aria-hidden />
@@ -77,12 +96,7 @@ const PlayerFrame = forwardRef(function PlayerFrame({ play, live = false, startA
           )}
         </div>
       ) : (
-        <Player key={`${attempt}-${sources[0]?.url}`} sources={sources} live={live} startAt={startAt} title={title} autoPlay={autoPlay} nativeFullscreen={false} onError={setError} onProgress={onProgress} onReady={handleReady} onTimeUpdate={onTimeUpdate} onEnded={onEnded} />
-      )}
-      {!error && (
-        <button type="button" onClick={toggleFs} aria-label={fs ? 'Sair da tela cheia' : 'Tela cheia'} className="absolute left-3 top-3 z-10 rounded bg-black/60 p-1.5 text-white backdrop-blur hover:bg-black/80">
-          {fs ? <Minimize2 className="h-4 w-4" aria-hidden /> : <Maximize2 className="h-4 w-4" aria-hidden />}
-        </button>
+        <Player key={`${attempt}-${sources[0]?.url}`} sources={sources} live={live} startAt={startAt} title={title} autoPlay={autoPlay} fs={full} onToggleFs={toggleFs} onError={setError} onProgress={onProgress} onReady={handleReady} onTimeUpdate={onTimeUpdate} onEnded={onEnded} />
       )}
       {!error && children}
     </div>

@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import { Settings } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ArrowLeft, Crop, Loader2, Maximize, Minimize, Pause, Play, RotateCcw, RotateCw, Settings, Volume1, Volume2, VolumeX } from 'lucide-react';
+import { formatClock } from './content.js';
 
 const kindOf = (src) => (src.format === 'm3u8' || /\.m3u8(\?|$)/i.test(src.url) ? 'hls' : src.format === 'ts' || /\.ts(\?|$)/i.test(src.url) ? 'ts' : 'direct');
 
@@ -14,7 +15,7 @@ const kindOf = (src) => (src.format === 'm3u8' || /\.m3u8(\?|$)/i.test(src.url) 
  */
 const MAX_LIVE_RETRIES = 8;
 
-export default function Player({ sources, live = false, startAt = 0, title, autoPlay = true, nativeFullscreen = true, onError, onProgress, onReady, onTimeUpdate, onEnded }) {
+export default function Player({ sources, live = false, startAt = 0, title, autoPlay = true, fs = false, onToggleFs, onError, onProgress, onReady, onTimeUpdate, onEnded }) {
   const videoRef = useRef(null);
   const cbRef = useRef({});
   cbRef.current = { onError, onProgress, onReady, onTimeUpdate, onEnded };
@@ -24,6 +25,101 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
   const [reconnecting, setReconnecting] = useState(false);
   const hlsRef = useRef(null);
   const sourcesKey = (sources || []).map((s) => s.url).join('|');
+  const wrapRef = useRef(null);
+  const barRef = useRef(null);
+  const hideTimer = useRef(null);
+  const pointerType = useRef('mouse');
+  const hovering = useRef(false);
+  const latest = useRef({});
+  latest.current = { fs, onToggleFs, live };
+  const [coarse] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches);
+  const [ui, setUi] = useState({ paused: true, t: 0, d: 0, buffered: 0, waiting: true });
+  const [volume, setVolume] = useState(1);
+  const [muted, setMuted] = useState(false);
+  const [fit, setFit] = useState(null);
+  const [show, setShow] = useState(true);
+  const [drag, setDrag] = useState(null);
+  const [hover, setHover] = useState(null);
+
+  const poke = useCallback(() => {
+    setShow(true);
+    clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => setShow(false), 3000);
+  }, []);
+  useEffect(() => () => clearTimeout(hideTimer.current), []);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return undefined;
+    const bufEnd = () => {
+      const b = v.buffered;
+      for (let i = 0; i < b.length; i += 1) if (b.start(i) <= v.currentTime + 0.5 && b.end(i) >= v.currentTime) return b.end(i);
+      return 0;
+    };
+    const upd = (extra) => setUi((p) => ({ ...p, paused: v.paused, t: v.currentTime, d: Number.isFinite(v.duration) ? v.duration : 0, buffered: bufEnd(), ...extra }));
+    const onVolume = () => { setVolume(v.volume); setMuted(v.muted); };
+    const on = {
+      play: () => upd(), pause: () => upd(), timeupdate: () => upd(), durationchange: () => upd(), progress: () => upd(), seeked: () => upd(),
+      waiting: () => upd({ waiting: true }), loadstart: () => upd({ waiting: true }), playing: () => upd({ waiting: false }), canplay: () => upd({ waiting: false }),
+      volumechange: onVolume,
+    };
+    for (const [n, h] of Object.entries(on)) v.addEventListener(n, h);
+    onVolume();
+    return () => { for (const [n, h] of Object.entries(on)) v.removeEventListener(n, h); };
+  }, []);
+
+  const togglePlay = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) v.play().catch(() => {});
+    else v.pause();
+  };
+  const seekTo = (sec) => {
+    const v = videoRef.current;
+    if (!v || !Number.isFinite(v.duration)) return;
+    v.currentTime = Math.max(0, Math.min(sec, v.duration - 0.1));
+  };
+  const skip = (delta) => { const v = videoRef.current; if (v) seekTo(v.currentTime + delta); };
+  const setVol = (x) => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.volume = Math.max(0, Math.min(1, x));
+    v.muted = v.volume === 0;
+  };
+  const toggleMute = () => { const v = videoRef.current; if (v) v.muted = !v.muted; };
+
+  // Atalhos de teclado (só quando o player está em foco, com o mouse sobre ele ou em tela cheia).
+  useEffect(() => {
+    const onKey = (e) => {
+      const t = e.target;
+      if (t instanceof HTMLElement && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const { fs: isFs, onToggleFs: toggleFs, live: isLive } = latest.current;
+      const w = wrapRef.current;
+      if (!w) return;
+      if (e.key === 'Escape') {
+        if (isFs) { e.preventDefault(); toggleFs?.(); }
+        return;
+      }
+      if (!(isFs || hovering.current || w.contains(document.activeElement))) return;
+      const v = videoRef.current;
+      const k = e.key.toLowerCase();
+      if (k === ' ' && t instanceof HTMLElement && t.tagName === 'BUTTON') return;
+      if (k === ' ' || k === 'k') togglePlay();
+      else if (k === 'f') toggleFs?.();
+      else if (k === 'm') toggleMute();
+      else if (k === 'arrowleft' && !isLive) skip(-10);
+      else if (k === 'arrowright' && !isLive) skip(10);
+      else if (k === 'arrowup' && v) setVol(v.volume + 0.1);
+      else if (k === 'arrowdown' && v) setVol(v.volume - 0.1);
+      else return;
+      e.preventDefault();
+      poke();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [poke]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -173,7 +269,6 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
             }
             const hls = new Hls({ enableWorker: true, lowLatencyMode: false });
             hlsRef.current = hls;
-            window.__ev = []; for (const n of Object.values(Hls.Events)) hls.on(n, (_e, d) => { if (!/Progress|Pts|Decrypted|Created|Attach|Updated/i.test(n)) window.__ev.push(Math.round(performance.now() / 100) / 10 + 's ' + n + ' ' + (d?.details ?? '') + (d?.frag ? ' sn' + d.frag.sn : '') + (d?.error?.message ? ' ' + d.error.message : '') + (d?.fatal !== undefined ? ' fatal=' + d.fatal : '')); }); // DBG
             engine = { destroy: () => hls.destroy(), managed: true };
             let netRetries = 0;
             hls.on(Hls.Events.ERROR, (_e, data) => {
@@ -249,35 +344,170 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
   };
   const levelLabel = (l) => (l.height ? `${l.height}p` : `${Math.round(l.bitrate / 1000)} kbps`);
 
+  const visible = show || ui.paused || menu || drag !== null;
+  const fitMode = fit ?? (fs && coarse ? 'cover' : 'contain');
+  const frac = drag ?? (ui.d > 0 ? Math.min(1, ui.t / ui.d) : 0);
+  const bufFrac = ui.d > 0 ? Math.min(1, ui.buffered / ui.d) : 0;
+  const barEvent = (e) => {
+    const r = barRef.current.getBoundingClientRect();
+    return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+  };
+  const VolIcon = muted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
+  const bubble = drag ?? hover;
+  const group = `transition-opacity duration-200 ${visible ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`;
+  const iconBtn = 'flex h-10 w-10 items-center justify-center rounded-full text-white transition hover:bg-white/15 active:scale-95 sm:h-11 sm:w-11';
+  const stop = (e) => { e.stopPropagation(); poke(); };
+
   return (
-    <div className="relative h-full w-full bg-black">
-      <video ref={videoRef} className="h-full w-full bg-black" controls controlsList={nativeFullscreen ? undefined : 'nofullscreen'} playsInline aria-label={title} />
+    <div
+      ref={wrapRef}
+      className={`relative h-full w-full select-none overflow-hidden bg-black ${visible ? '' : 'cursor-none'}`}
+      onMouseEnter={() => { hovering.current = true; }}
+      onMouseLeave={() => { hovering.current = false; if (!videoRef.current?.paused) setShow(false); }}
+      onPointerMove={(e) => { if (e.pointerType === 'mouse') poke(); }}
+    >
+      <video ref={videoRef} className={`h-full w-full bg-black ${fitMode === 'cover' ? 'object-cover' : 'object-contain'}`} playsInline aria-label={title} />
+
+      <div
+        className="absolute inset-0"
+        onPointerDown={(e) => { pointerType.current = e.pointerType; }}
+        onClick={() => {
+          if (pointerType.current === 'touch') {
+            if (visible) { clearTimeout(hideTimer.current); setShow(false); } else poke();
+          } else { togglePlay(); poke(); }
+        }}
+        onDoubleClick={() => { if (pointerType.current !== 'touch') onToggleFs?.(); }}
+      />
+
       {reconnecting && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/60 text-sm font-medium text-white" role="status">
           Reconectando ao canal…
         </div>
       )}
-      {levels.length > 1 && (
-        <div className="absolute right-3 top-3 z-10">
-          <button
-            type="button"
-            className="flex items-center gap-1 rounded bg-black/60 px-2 py-1 text-xs text-white backdrop-blur hover:bg-black/80"
-            onClick={() => setMenu((m) => !m)}
-            aria-haspopup="menu"
-            aria-expanded={menu}
-          >
-            <Settings className="h-3.5 w-3.5" aria-hidden /> {level === -1 ? 'Auto' : levelLabel(levels[level])}
+      {ui.waiting && !ui.paused && !reconnecting && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center" role="status" aria-label="Carregando">
+          <Loader2 className="h-14 w-14 animate-spin text-white/90" aria-hidden />
+        </div>
+      )}
+
+      {/* Barra superior */}
+      {fs && (
+        <div className={`absolute inset-x-0 top-0 flex items-center gap-2 bg-gradient-to-b from-black/80 to-transparent px-3 pb-8 pt-3 sm:px-5 sm:pt-4 ${group}`} onClick={stop}>
+          <button type="button" className={iconBtn} onClick={onToggleFs} aria-label="Sair da tela cheia"><ArrowLeft className="h-6 w-6" aria-hidden /></button>
+          {title && <p className="min-w-0 flex-1 truncate text-base font-semibold text-white drop-shadow sm:text-lg">{title}</p>}
+        </div>
+      )}
+
+      {/* Controles centrais */}
+      {!(ui.waiting && !ui.paused) && (
+        <div className={`pointer-events-none absolute inset-0 flex items-center justify-center gap-8 sm:gap-14 ${group}`}>
+          {!live && ui.d > 0 && (
+            <button type="button" className="pointer-events-auto relative flex h-12 w-12 items-center justify-center rounded-full text-white transition hover:bg-white/15 active:scale-95 sm:h-14 sm:w-14" onClick={(e) => { stop(e); skip(-10); }} aria-label="Voltar 10 segundos">
+              <RotateCcw className="h-full w-full" strokeWidth={1.6} aria-hidden />
+              <span className="absolute text-[11px] font-bold sm:text-xs" aria-hidden>10</span>
+            </button>
+          )}
+          <button type="button" className="pointer-events-auto flex h-16 w-16 items-center justify-center rounded-full bg-black/55 text-white ring-2 ring-white/80 backdrop-blur-sm transition hover:scale-105 hover:bg-black/70 active:scale-95 sm:h-20 sm:w-20" onClick={(e) => { stop(e); togglePlay(); }} aria-label={ui.paused ? 'Reproduzir' : 'Pausar'}>
+            {ui.paused ? <Play className="ml-1 h-9 w-9 fill-current sm:h-11 sm:w-11" aria-hidden /> : <Pause className="h-9 w-9 fill-current sm:h-11 sm:w-11" aria-hidden />}
           </button>
-          {menu && (
-            <ul className="mt-1 min-w-[96px] overflow-hidden rounded bg-black/90 text-xs text-white shadow-lg" role="menu">
-              <li><button type="button" role="menuitem" className="block w-full px-3 py-1.5 text-left hover:bg-white/15" onClick={() => changeLevel(-1)}>Auto</button></li>
-              {levels.map((l) => (
-                <li key={l.index}><button type="button" role="menuitem" className="block w-full px-3 py-1.5 text-left hover:bg-white/15" onClick={() => changeLevel(l.index)}>{levelLabel(l)}</button></li>
-              ))}
-            </ul>
+          {!live && ui.d > 0 && (
+            <button type="button" className="pointer-events-auto relative flex h-12 w-12 items-center justify-center rounded-full text-white transition hover:bg-white/15 active:scale-95 sm:h-14 sm:w-14" onClick={(e) => { stop(e); skip(10); }} aria-label="Avançar 10 segundos">
+              <RotateCw className="h-full w-full" strokeWidth={1.6} aria-hidden />
+              <span className="absolute text-[11px] font-bold sm:text-xs" aria-hidden>10</span>
+            </button>
           )}
         </div>
       )}
+
+      {/* Barra inferior */}
+      <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-3 pb-2 pt-12 sm:px-5 sm:pb-3 ${group}`} onClick={stop}>
+        {!live && (
+          <div
+            ref={barRef}
+            role="slider"
+            tabIndex={0}
+            aria-label="Progresso"
+            aria-valuemin={0}
+            aria-valuemax={Math.floor(ui.d)}
+            aria-valuenow={Math.floor(ui.t)}
+            aria-valuetext={`${formatClock(ui.t)} de ${formatClock(ui.d)}`}
+            className="group/bar relative flex h-9 w-full cursor-pointer touch-none items-center"
+            onPointerDown={(e) => { if (!ui.d) return; e.currentTarget.setPointerCapture(e.pointerId); setDrag(barEvent(e)); }}
+            onPointerMove={(e) => { const f = barEvent(e); setHover(f); if (drag !== null) setDrag(f); }}
+            onPointerUp={() => { if (drag !== null) { seekTo(drag * ui.d); setDrag(null); poke(); } }}
+            onPointerCancel={() => setDrag(null)}
+            onPointerLeave={() => setHover(null)}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowLeft') { e.preventDefault(); e.stopPropagation(); skip(-5); } else if (e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); skip(5); }
+            }}
+          >
+            <div className={`relative w-full overflow-hidden rounded-full bg-white/30 transition-all ${drag !== null ? 'h-2.5' : 'h-1.5 group-hover/bar:h-2.5'}`}>
+              <div className="absolute inset-y-0 left-0 bg-white/40" style={{ width: `${bufFrac * 100}%` }} />
+              <div className="absolute inset-y-0 left-0 bg-primary" style={{ width: `${frac * 100}%` }} />
+            </div>
+            <span
+              className={`pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary shadow-lg ring-2 ring-white transition-[width,height] ${drag !== null ? 'h-7 w-7' : 'h-5 w-5 group-hover/bar:h-6 group-hover/bar:w-6'}`}
+              style={{ left: `${frac * 100}%` }}
+              aria-hidden
+            />
+            {bubble !== null && ui.d > 0 && (
+              <span className="pointer-events-none absolute -top-5 -translate-x-1/2 rounded bg-black/85 px-2 py-0.5 text-xs font-medium text-white" style={{ left: `${Math.min(97, Math.max(3, bubble * 100))}%` }}>
+                {formatClock(bubble * ui.d)}
+              </span>
+            )}
+          </div>
+        )}
+
+        <div className="flex items-center gap-0.5 text-white sm:gap-1.5">
+          <button type="button" className={iconBtn} onClick={togglePlay} aria-label={ui.paused ? 'Reproduzir' : 'Pausar'}>
+            {ui.paused ? <Play className="h-6 w-6 fill-current" aria-hidden /> : <Pause className="h-6 w-6 fill-current" aria-hidden />}
+          </button>
+          <div className="group/vol flex items-center">
+            <button type="button" className={iconBtn} onClick={toggleMute} aria-label={muted ? 'Ativar som' : 'Silenciar'}><VolIcon className="h-6 w-6" aria-hidden /></button>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={muted ? 0 : volume}
+              onChange={(e) => setVol(Number(e.target.value))}
+              aria-label="Volume"
+              className="hidden h-1 w-0 cursor-pointer accent-white transition-all group-hover/vol:w-20 focus:w-20 sm:block"
+            />
+          </div>
+          <div className="ml-1 text-sm font-medium tabular-nums">
+            {live ? (
+              <span className="inline-flex items-center gap-1.5 rounded bg-red-600 px-2 py-0.5 text-xs font-bold uppercase">Ao vivo</span>
+            ) : (
+              <span>{formatClock(ui.t)} <span className="text-white/60">/ {formatClock(ui.d)}</span></span>
+            )}
+          </div>
+          <div className="flex-1" />
+          <button type="button" className={iconBtn} onClick={() => setFit(fitMode === 'cover' ? 'contain' : 'cover')} aria-label={fitMode === 'cover' ? 'Ajustar à tela' : 'Preencher a tela'} aria-pressed={fitMode === 'cover'} title={fitMode === 'cover' ? 'Ajustar à tela' : 'Preencher a tela'}>
+            <Crop className="h-5 w-5" aria-hidden />
+          </button>
+          {levels.length > 1 && (
+            <div className="relative">
+              <button type="button" className={`${iconBtn} !w-auto gap-1 px-2 text-xs font-semibold`} onClick={() => setMenu((m) => !m)} aria-haspopup="menu" aria-expanded={menu} aria-label="Qualidade">
+                <Settings className="h-5 w-5" aria-hidden /> <span className="hidden sm:inline">{level === -1 ? 'Auto' : levelLabel(levels[level])}</span>
+              </button>
+              {menu && (
+                <ul className="absolute bottom-full right-0 mb-2 min-w-[110px] overflow-hidden rounded-lg bg-black/95 text-sm text-white shadow-xl ring-1 ring-white/15" role="menu">
+                  <li><button type="button" role="menuitem" className={`block w-full px-4 py-2 text-left hover:bg-white/15 ${level === -1 ? 'font-bold' : ''}`} onClick={() => changeLevel(-1)}>Auto</button></li>
+                  {levels.map((l) => (
+                    <li key={l.index}><button type="button" role="menuitem" className={`block w-full px-4 py-2 text-left hover:bg-white/15 ${level === l.index ? 'font-bold' : ''}`} onClick={() => changeLevel(l.index)}>{levelLabel(l)}</button></li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+          {onToggleFs && (
+            <button type="button" className={iconBtn} onClick={onToggleFs} aria-label={fs ? 'Sair da tela cheia' : 'Tela cheia'}>
+              {fs ? <Minimize className="h-6 w-6" aria-hidden /> : <Maximize className="h-6 w-6" aria-hidden />}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

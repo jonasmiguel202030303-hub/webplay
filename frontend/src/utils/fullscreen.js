@@ -3,18 +3,35 @@
  * contêiner e, quando ela não existe (Safari no iPhone, que só suporta fullscreen no <video>),
  * cai para o modo nativo do próprio elemento de vídeo.
  */
-export function enterFullscreen(container, video) {
+/** Devolve 'element' (tela cheia do contêiner), 'video' (nativo do <video>, iPhone) ou 'none' (sem suporte/bloqueado). */
+export async function enterFullscreen(container, video) {
   const req = container?.requestFullscreen || container?.webkitRequestFullscreen || container?.mozRequestFullScreen || container?.msRequestFullscreen;
   if (req) {
     try {
-      const r = req.call(container);
-      if (r?.catch) r.catch(() => video?.webkitEnterFullscreen?.());
-      return;
+      await req.call(container);
+      return 'element';
     } catch {
       /* cai para o fallback abaixo */
     }
   }
-  video?.webkitEnterFullscreen?.();
+  if (video?.webkitEnterFullscreen) {
+    try {
+      video.webkitEnterFullscreen();
+      return 'video';
+    } catch {
+      /* sem suporte */
+    }
+  }
+  return 'none';
+}
+
+/** No celular, deita a tela ao entrar em tela cheia (só funciona dentro da tela cheia; falhas são ignoradas). */
+export function lockLandscape() {
+  try { screen.orientation?.lock?.('landscape')?.catch?.(() => {}); } catch { /* ignora */ }
+}
+
+export function unlockOrientation() {
+  try { screen.orientation?.unlock?.(); } catch { /* ignora */ }
 }
 
 export function exitFullscreen() {

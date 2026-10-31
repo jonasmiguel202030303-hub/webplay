@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Heart, Play, RotateCcw, SkipForward, Star } from 'lucide-react';
 import CatalogError from '../../components/viewer/CatalogError.jsx';
 import PlayerFrame from '../../components/viewer/PlayerFrame.jsx';
+import CastStrip, { EpisodeThumb } from '../../components/viewer/CastStrip.jsx';
 import { contentRef, episodePath, formatClock } from '../../components/viewer/content.js';
 import Button from '../../components/ui/Button.jsx';
 import { Spinner } from '../../components/ui/Feedback.jsx';
@@ -80,10 +81,10 @@ function InfoPanel({ poster, details }) {
         )}
         {details.plot ? <p className="text-sm leading-relaxed text-fg/85">{details.plot}</p> : <p className="text-sm text-fg/50">Sinopse não disponível na fonte.</p>}
         <dl className="space-y-1 pt-1 text-sm">
-          {details.cast && <div><dt className="inline text-fg/50">Elenco: </dt><dd className="inline text-fg/80">{details.cast}</dd></div>}
           {details.director && <div><dt className="inline text-fg/50">Direção: </dt><dd className="inline text-fg/80">{details.director}</dd></div>}
           {details.genre && <div><dt className="inline text-fg/50">Gêneros: </dt><dd className="inline text-fg/80">{details.genre}</dd></div>}
         </dl>
+        <div className="pt-2"><CastStrip d={details} /></div>
       </div>
     </section>
   );
@@ -112,11 +113,14 @@ function Episodes({ details, seriesId, serverId, currentId }) {
               to={episodePath(slug, { serverId, seriesId, episodeId: ep.id, ext: ep.extension })}
               replace
               aria-current={ep.id === currentId ? 'true' : undefined}
-              className={`flex items-center gap-3 px-3 py-2.5 text-sm transition hover:bg-fg/10 ${ep.id === currentId ? 'bg-primary/15' : ''}`}
+              className={`group flex items-start gap-3 px-3 py-2.5 text-sm transition hover:bg-fg/10 ${ep.id === currentId ? 'bg-primary/15' : ''}`}
             >
-              <span className="w-6 shrink-0 text-center font-semibold text-fg/50">{ep.number ?? i + 1}</span>
-              <span className="min-w-0 flex-1 truncate font-medium">{ep.title}</span>
-              {ep.duration && <span className="shrink-0 text-xs text-fg/50">{ep.duration}</span>}
+              <span className="w-6 shrink-0 pt-0.5 text-center text-lg font-semibold text-fg/50">{ep.number ?? i + 1}</span>
+              <EpisodeThumb src={ep.image || details?.backdrop || details?.cover} />
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center justify-between gap-2"><span className="truncate font-medium">{ep.title}</span>{ep.duration && <span className="shrink-0 text-xs text-fg/50">{ep.duration}</span>}</span>
+                {ep.plot && <span className="mt-0.5 line-clamp-2 block text-xs text-fg/60">{ep.plot}</span>}
+              </span>
             </Link>
           </li>
         ))}
@@ -214,12 +218,12 @@ export default function Watch() {
   const overlay = isSeries ? (
     <>
       {showIntro && (
-        <button type="button" onClick={skipIntro} className="absolute bottom-16 right-4 z-10 rounded border border-white/60 bg-black/70 px-4 py-2 text-sm font-semibold text-white backdrop-blur hover:bg-white hover:text-black">
+        <button type="button" onClick={skipIntro} className="absolute bottom-24 right-4 z-20 rounded border border-white/60 bg-black/70 px-4 py-2 text-sm font-semibold text-white backdrop-blur hover:bg-white hover:text-black">
           Pular abertura
         </button>
       )}
       {showNext && (
-        <div className="absolute bottom-16 right-4 z-10 flex items-center gap-2 rounded-lg border border-white/20 bg-black/80 p-2 text-white backdrop-blur">
+        <div className="absolute bottom-24 right-4 z-20 flex items-center gap-2 rounded-lg border border-white/20 bg-black/80 p-2 text-white backdrop-blur">
           <button type="button" onClick={goNext} className="flex items-center gap-2 rounded bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-white/80">
             <SkipForward className="h-4 w-4" aria-hidden /> Próximo episódio
           </button>
