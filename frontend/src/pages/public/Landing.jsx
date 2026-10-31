@@ -39,7 +39,7 @@ const FEATURES = [
 ];
 
 const STEPS = [
-  { icon: UserPlus, title: 'Crie sua conta', text: 'Cadastre-se e ative sua conta pelo e-mail.' },
+  { icon: UserPlus, title: 'Crie sua conta', text: 'Cadastre-se e entre direto, sem precisar ativar por e-mail.' },
   { icon: Palette, title: 'Personalize sua plataforma', text: 'Defina logotipo, cores e banners da sua marca.' },
   { icon: PlugZap, title: 'Configure sua fonte autorizada', text: 'Conecte a fonte que você tem direito de utilizar.' },
   { icon: Share2, title: 'Compartilhe sua página personalizada', text: 'Envie o link exclusivo para os seus clientes.' },

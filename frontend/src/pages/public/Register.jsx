@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AuthCard from '../../components/AuthCard.jsx';
 import Button from '../../components/ui/Button.jsx';
 import { Checkbox, Field, PasswordField } from '../../components/ui/Field.jsx';
 import { Alert } from '../../components/ui/Feedback.jsx';
+import { useAuth, homeFor } from '../../contexts/AuthContext.jsx';
 import { authService, publicService } from '../../services/authService.js';
 import { fieldErrors } from '../../services/api.js';
 import { useDebounced } from '../../hooks/useDebounced.js';
@@ -11,18 +12,11 @@ import { usePlatform } from '../../hooks/usePlatform.js';
 import { useTitle } from '../../hooks/useTitle.js';
 import { slugify } from '../../utils/format.js';
 
-const toPath = (url) => {
-  try {
-    const u = new URL(url);
-    return u.pathname + u.search;
-  } catch {
-    return url;
-  }
-};
-
 export default function Register() {
   useTitle('Criar conta — WebPlay Brasil');
   const platform = usePlatform();
+  const { login } = useAuth();
+  const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', password: '', brandName: '', slug: '', acceptTerms: false });
   const [slugTouched, setSlugTouched] = useState(false);
   const [slugState, setSlugState] = useState({ checking: false, available: null, reason: null });
@@ -61,7 +55,13 @@ export default function Register() {
     setError(null);
     setErrors({});
     try {
-      setDone(await authService.register(form));
+      const created = await authService.register(form);
+      try {
+        const data = await login(form.email, form.password);
+        navigate(homeFor(data.user), { replace: true });
+      } catch {
+        setDone(created);
+      }
     } catch (err) {
       setErrors(fieldErrors(err));
       setError(err);
@@ -72,13 +72,8 @@ export default function Register() {
 
   if (done) {
     return (
-      <AuthCard title="Confira seu e-mail" subtitle="Falta só ativar a conta.">
+      <AuthCard title="Conta criada" subtitle="Sua conta está pronta.">
         <Alert tone="success">{done.message}</Alert>
-        {done.devActivationUrl && (
-          <Alert tone="warning" className="mt-4" title="Ambiente de desenvolvimento">
-            O e-mail não é enviado sem SMTP configurado. Use o link: <Link className="font-semibold underline" to={toPath(done.devActivationUrl)}>ativar minha conta</Link>
-          </Alert>
-        )}
         <p className="mt-6 text-center text-sm"><Link to="/entrar" className="text-primary hover:underline">Ir para o login</Link></p>
       </AuthCard>
     );

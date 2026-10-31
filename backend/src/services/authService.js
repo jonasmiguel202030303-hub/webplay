@@ -40,11 +40,10 @@ export async function register(req, data) {
 
   const passwordHash = await hashPassword(data.password);
   let userId;
-  let token;
   try {
-    ({ userId, token } = await withTransaction(async (tx) => {
+    ({ userId } = await withTransaction(async (tx) => {
       const u = await tx.query(
-        "INSERT INTO users (name, email, email_normalized, password_hash, role, status) VALUES (?, ?, ?, ?, 'tenant_owner', 'pending_activation')",
+        "INSERT INTO users (name, email, email_normalized, password_hash, role, status) VALUES (?, ?, ?, ?, 'tenant_owner', 'active')",
         [data.name, data.email, emailNormalized, passwordHash],
       );
       const t = await tx.query('INSERT INTO tenants (owner_user_id, slug) VALUES (?, ?)', [u.insertId, data.slug]);
@@ -55,8 +54,8 @@ export async function register(req, data) {
       ]);
       await tx.query('INSERT INTO tenant_settings (tenant_id) VALUES (?)', [t.insertId]);
       await recordTermsAcceptance(tx, { userId: u.insertId, req });
-      const activation = await createOneTimeToken({ userId: u.insertId, purpose: 'activation', ttlMs: 48 * HOUR_MS, db: tx });
-      return { userId: u.insertId, token: activation };
+      await startTrial(tx, { tenantId: t.insertId, userId: u.insertId, emailNormalized, ipHash: hashIp(clientIp(req)) });
+      return { userId: u.insertId };
     }));
   } catch (err) {
     if (isDuplicateError(err)) {
@@ -65,14 +64,19 @@ export async function register(req, data) {
     throw err;
   }
 
-  const link = `${config.appUrl}/ativar?token=${token}`;
-  await sendMail({
-    to: data.email,
-    subject: 'Ative sua conta WebPlay Brasil',
-    text: `Olá, ${data.name}!\n\nPara ativar sua conta e iniciar o teste gratuito, acesse:\n${link}\n\nO link vale por 48 horas. Se você não criou esta conta, ignore este e-mail.\n\nWebPlay Brasil — Lumo Tecnologia`,
-  });
   await audit(req, { action: 'auth.register', entityType: 'user', entityId: userId, actor: { userId, role: 'tenant_owner' }, metadata: { slug: data.slug } });
-  return { userId, ...(config.isProd ? {} : { devActivationUrl: link }) };
+  return { userId };
+}
+
+/** Contas criadas quando a ativação por e-mail ainda existia entram direto: ativa e inicia o teste no primeiro login. */
+async function activatePending(req, user) {
+  await withTransaction(async (tx) => {
+    await tx.query("UPDATE users SET status = 'active' WHERE id = ? AND status = 'pending_activation'", [user.id]);
+    const tenant = await tx.queryOne('SELECT id FROM tenants WHERE owner_user_id = ?', [user.id]);
+    if (tenant) {
+      await startTrial(tx, { tenantId: tenant.id, userId: user.id, emailNormalized: user.email_normalized, ipHash: hashIp(clientIp(req)) });
+    }
+  });
 }
 
 export async function activate(req, token) {
@@ -130,7 +134,7 @@ export async function verifyCredentials({ table, row, password, req, auditAction
 export async function login(req, { email, password }) {
   const user = await queryOne('SELECT * FROM users WHERE email_normalized = ? AND deleted_at IS NULL LIMIT 1', [normalizeEmail(email)]);
   await verifyCredentials({ table: 'users', row: user, password, req, auditAction: 'auth.login' });
-  if (user.status === 'pending_activation') throw forbidden('Ative sua conta pelo link enviado ao seu e-mail.', 'ACCOUNT_NOT_ACTIVATED');
+  if (user.status === 'pending_activation') await activatePending(req, user);
   if (user.status === 'suspended') throw forbidden('Conta suspensa. Entre em contato com o suporte.', 'ACCOUNT_SUSPENDED');
   await audit(req, { action: 'auth.login', entityType: 'user', entityId: user.id, actor: { userId: user.id, role: user.role } });
   return user;

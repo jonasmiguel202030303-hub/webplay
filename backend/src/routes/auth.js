@@ -34,8 +34,8 @@ async function sessionPayload(user) {
 const setSession = (res, user) => res.cookie(STAFF_COOKIE, signStaffToken(user), cookieOptions(staffCookieMaxAge()));
 
 router.post('/register', authLimiter(), validate(registerSchema), asyncHandler(async (req, res) => {
-  const result = await auth.register(req, req.valid.body);
-  res.status(201).json({ ok: true, message: 'Conta criada. Enviamos um link de ativação para o seu e-mail.', ...(result.devActivationUrl ? { devActivationUrl: result.devActivationUrl } : {}) });
+  await auth.register(req, req.valid.body);
+  res.status(201).json({ ok: true, message: 'Conta criada com sucesso.' });
 }));
 
 router.post('/activate', authLimiter(), validate(tokenSchema), asyncHandler(async (req, res) => {
