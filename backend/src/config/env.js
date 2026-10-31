@@ -69,7 +69,8 @@ export function loadConfig(env = process.env) {
     },
 
     source: {
-      allowHttp: bool(env.ALLOW_HTTP_SOURCES, !isProd),
+      // Painéis IPTV/Xtream são quase sempre http://; o relay serve tudo por https ao navegador.
+      allowHttp: bool(env.ALLOW_HTTP_SOURCES, true),
       allowedPrivateHosts: list(env.SSRF_ALLOWED_HOSTS).map((h) => h.toLowerCase()),
       timeoutMs: int(env.SOURCE_TIMEOUT_MS, 10000),
       dnsFallback: list(env.SOURCE_DNS_FALLBACK ?? '8.8.8.8,1.1.1.1'),
