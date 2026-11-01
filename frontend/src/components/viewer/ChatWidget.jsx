@@ -8,6 +8,15 @@ const POLL_MS = 3000;
 const MAX_KEPT = 200;
 const time = (iso) => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
+const QUICK = [
+  'Oi, pessoal!',
+  'Me recomendem um filme bom de ação',
+  'Quem joga hoje?',
+  'Qual série vocês recomendam?',
+  'Alguém sabe de um bom canal de esportes?',
+  'Qual filme de comédia vocês indicam?',
+];
+
 /** Chat em tempo real entre os espectadores da mesma página (consulta a cada 3 s enquanto aberto). */
 export default function ChatWidget() {
   const { slug, tenant, profile, svc } = useViewer();
@@ -71,15 +80,15 @@ export default function ChatWidget() {
     if (el) stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
   };
 
-  const send = async (e) => {
-    e.preventDefault();
-    const body = text.trim();
+  const send = async (e, quick) => {
+    e?.preventDefault();
+    const body = (quick ?? text).trim();
     if (!body || sending) return;
     setSending(true);
     setError('');
     try {
       const res = await svc.sendChat(body);
-      setText('');
+      if (quick === undefined) setText('');
       stick.current = true;
       merge([res.message]);
     } catch (err) {
@@ -153,6 +162,13 @@ export default function ChatWidget() {
                 })}
               </div>
               <form onSubmit={send} className="border-t border-fg/10 p-2.5">
+                <div className="-mx-0.5 mb-2 flex gap-1.5 overflow-x-auto pb-1" aria-label="Perguntas prontas">
+                  {QUICK.map((q) => (
+                    <button key={q} type="button" disabled={sending} onClick={() => send(null, q)} className="shrink-0 rounded-full border border-fg/15 bg-fg/5 px-3 py-1 text-xs text-fg/80 transition hover:bg-fg/10 hover:text-fg disabled:opacity-50">
+                      {q}
+                    </button>
+                  ))}
+                </div>
                 {error && <p role="alert" className="mb-1.5 text-xs text-red-300">{error}</p>}
                 <div className="flex items-center gap-2">
                   <input

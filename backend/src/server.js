@@ -3,8 +3,16 @@ import { logger } from './config/logger.js';
 import { closePool } from './config/db.js';
 import { createApp } from './app.js';
 import { startJobs, stopJobs } from './jobs/scheduler.js';
+import { runMigrations } from '../database/migrate.js';
 
 assertProductionConfig(config);
+
+// Aplica migrações pendentes antes de aceitar tráfego (idempotente); se falhar, sobe mesmo assim e registra o erro.
+try {
+  await runMigrations({ log: (m) => logger.info(m) });
+} catch (err) {
+  logger.error('Falha ao aplicar migrações', { error: err });
+}
 
 const app = createApp();
 const server = app.listen(config.port, () => {

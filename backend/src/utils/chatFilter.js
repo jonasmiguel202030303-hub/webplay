@@ -5,6 +5,9 @@ const BASE_WORDS = [
   'arrombada', 'foder', 'fodase', 'foda se', 'vai se foder', 'filho da puta', 'filha da puta', 'desgraca', 'otario',
   'otaria', 'imbecil', 'idiota', 'retardado', 'retardada', 'macaco fedido', 'nazista', 'estuprador', 'estupro', 'pedofilo',
   'pedofilia', 'vagabundo', 'vagabunda', 'piranha', 'safado', 'safada', 'punheta', 'pau no cu', 'toma no cu',
+  'fodido', 'fodida', 'fodendo', 'merda', 'bosta', 'carai', 'crl', 'krl', 'tnc', 'vtnc', 'pqp', 'corno', 'corna', 'babaca',
+  'cretino', 'escroto', 'escrota', 'crioulo', 'nigga', 'nigger', 'mongol', 'mongoloide', 'viadinho', 'cacete', 'caceta',
+  'cuzinho', 'tomanocu', 'vai tomar no cu', 'foda', 'fuder', 'puta que pariu', 'puta merda', 'desgracado', 'desgracada',
 ];
 
 const LEET = { 0: 'o', 1: 'i', 3: 'e', 4: 'a', 5: 's', 7: 't', '@': 'a', $: 's', '!': 'i' };
@@ -46,10 +49,15 @@ function matcherFor(words) {
 
 const LINK_RE = /(https?:\/\/|www\.|\bt\.me\/|\bwa\.me\/|\b[a-z0-9-]{2,}\.(com|net|org|br|tv|top|xyz|me|io|cc|info|site|online|app|club|live|link|ly)\b)/i;
 
+// Termos longos e sem uso legítimo: bloqueados até colados em outras palavras ou com espaços entre as letras.
+const EMBEDDED = ['caralho', 'buceta', 'xereca', 'arombad', 'punheta', 'filhodaputa', 'putaquepariu'];
+
 /** Devolve null se a mensagem pode ser enviada, ou o motivo do bloqueio ('link' | 'word'). */
 export function checkMessage(text, extraWords = []) {
   if (LINK_RE.test(String(text))) return 'link';
+  const vs = variants(text);
+  if (vs.some((v) => { const j = v.replace(/ /g, ''); return EMBEDDED.some((w) => j.includes(w)); })) return 'word';
   const re = matcherFor([...BASE_WORDS, ...extraWords]);
   if (!re) return null;
-  return variants(text).some((v) => re.test(v)) ? 'word' : null;
+  return vs.some((v) => re.test(v)) ? 'word' : null;
 }
