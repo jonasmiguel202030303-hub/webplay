@@ -144,6 +144,11 @@ router.get('/home', asyncHandler(async (req, res) => {
   res.json(await catalog.buildHome(req.tenant.id, serverId, req.profile, { hideAdult: !!req.viewer.adult_control_enabled }));
 }));
 
+router.post('/catalog/refresh', sensitiveLimiter(), asyncHandler(async (req, res) => {
+  const serverId = await catalog.resolveServerId(req.tenant.id, req.query.serverId);
+  res.json(await sources.refreshViewerCatalog(req.tenant.id, serverId));
+}));
+
 router.get('/backdrops', asyncHandler(async (req, res) => {
   let items;
   try { items = JSON.parse(String(req.query.items ?? '[]')); } catch { throw badRequest('Lista inválida.', 'INVALID_ITEMS'); }

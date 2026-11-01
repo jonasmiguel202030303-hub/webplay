@@ -56,6 +56,7 @@ export function createViewerService(slug, getProfileId) {
     playEpisode: (seriesId, episodeId, ext, serverId) => get(`/play/series/${encodeURIComponent(seriesId)}/episode/${encodeURIComponent(episodeId)}`, { query: { serverId, ext } }),
     details: (type, streamId, serverId) => get(`/details/${type}/${encodeURIComponent(streamId)}`, { query: { serverId } }),
     backdrops: (items) => get('/backdrops', { query: { items: JSON.stringify(items) } }),
+    refreshCatalog: (serverId) => post('/catalog/refresh', undefined, { query: { serverId } }),
     epg: (streamId, serverId) => get(`/epg/${encodeURIComponent(streamId)}`, { query: { serverId } }),
     posters: () => api.get(`${base}/posters`),
 

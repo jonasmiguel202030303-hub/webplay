@@ -342,6 +342,23 @@ async function cachedSmall(key, ttlMs, loader) {
   return data;
 }
 
+const refreshedAt = new Map();
+const REFRESH_COOLDOWN_MS = 15_000;
+
+/** Recarrega canais, filmes e séries da linha atual (o cache antigo continua valendo se a fonte falhar); limita a frequência para não estourar o limite do provedor. */
+export async function refreshViewerCatalog(tenantId, serverId) {
+  const prefix = `${serverId}:${lineKey()}:`;
+  const last = refreshedAt.get(prefix) ?? 0;
+  if (Date.now() - last < REFRESH_COOLDOWN_MS) return { refreshed: false };
+  refreshedAt.set(prefix, Date.now());
+  if (refreshedAt.size > 500) refreshedAt.delete(refreshedAt.keys().next().value);
+  for (const [k, v] of memCache) if (k.startsWith(prefix)) v.at = 0;
+  for (const k of smallCache.keys()) if (k.startsWith(prefix)) smallCache.delete(k);
+  const results = await Promise.allSettled(['live', 'vod', 'series'].map((t) => allStreams(tenantId, serverId, t)));
+  if (results.every((r) => r.status === 'rejected')) throw toAppError(results[0].reason);
+  return { refreshed: true };
+}
+
 /** Detalhes (sinopse, elenco, temporadas...) de filme ou série, com cache curto. Elenco com foto e imagem dos episódios vêm da TMDB quando a fonte não traz. */
 export async function getDetails(tenantId, serverId, type, id) {
   const row = await loadServer(tenantId, serverId);

@@ -23,7 +23,8 @@ export function createApp({ frontendDir = path.resolve(backendRoot, '..', 'front
 
   app.use(metricsMiddleware(logger));
   app.use(securityHeaders());
-  app.use(corsMiddleware());
+  const corsForApi = corsMiddleware();
+  app.use((req, res, next) => (req.path.startsWith('/api/relay/') ? next() : corsForApi(req, res, next)));
   app.use(compression());
   app.use(cookieParser());
 
@@ -40,7 +41,13 @@ export function createApp({ frontendDir = path.resolve(backendRoot, '..', 'front
   );
 
   // Retransmissão de mídia: protegida por token opaco com validade; fora do limite global (um vídeo faz centenas de requisições).
-  app.get('/api/relay/:token', asyncHandler(handleRelay));
+  // A TV (receptor Chromecast) busca a mídia direto no relay; o token na URL é a autorização, então não há credenciais nem cookies.
+  const relayCors = (_req, res, next) => {
+    res.set({ 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Range', 'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Accept-Ranges' });
+    next();
+  };
+  app.options('/api/relay/:token', relayCors, (_req, res) => res.status(204).end());
+  app.get('/api/relay/:token', relayCors, asyncHandler(handleRelay));
 
   app.use('/api', globalLimiter(), express.json({ limit: '100kb' }), csrfGuard, apiRouter);
   app.use('/api', notFoundHandler);

@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Clock, Heart, Home, LogOut, Search, Tv, User, Users, Film, Clapperboard, Volume2, VolumeX } from 'lucide-react';
+import { Clock, Heart, Home, LogOut, RefreshCw, Search, Tv, User, Users, Film, Clapperboard, Volume2, VolumeX } from 'lucide-react';
 import BrandLogo from '../components/viewer/BrandLogo.jsx';
 import ProfileAvatar from '../components/viewer/ProfileAvatar.jsx';
 import { ContentModalProvider } from '../components/viewer/ContentModal.jsx';
 import WhatsAppFloat from '../components/WhatsAppFloat.jsx';
 import { setSoundEnabled, playPreview, useSoundEnabled } from '../utils/sound.js';
 import { useViewer } from '../contexts/ViewerContext.jsx';
+import { useToast } from '../contexts/ToastContext.jsx';
 
 const NAV = [
   { to: '', label: 'Início', icon: Home, end: true },
@@ -89,6 +90,38 @@ function ProfileMenu() {
   );
 }
 
+/** Botão redondo: recarrega canais, filmes e séries direto da fonte e atualiza a tela atual. */
+function RefreshButton({ onDone }) {
+  const { svc } = useViewer();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const r = await svc.refreshCatalog();
+      onDone();
+      toast.success(r?.refreshed === false ? 'Dados já atualizados há instantes.' : 'Canais, filmes e séries atualizados.');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={run}
+      disabled={busy}
+      aria-label="Atualizar canais, filmes e séries"
+      title="Atualizar canais, filmes e séries"
+      className="flex h-9 w-9 items-center justify-center rounded-full bg-fg/10 text-fg/80 transition hover:bg-fg/20 hover:text-fg disabled:opacity-60"
+    >
+      <RefreshCw className={`h-4 w-4 ${busy ? 'animate-spin' : ''}`} aria-hidden />
+    </button>
+  );
+}
+
 function SearchBox() {
   const { slug } = useViewer();
   const navigate = useNavigate();
@@ -117,6 +150,7 @@ export default function ViewerLayout() {
   const watching = pathname.startsWith(`${base}/assistir/`);
   const isHome = pathname === base || pathname === `${base}/`;
   const [scrolled, setScrolled] = useState(!isHome);
+  const [dataKey, setDataKey] = useState(0);
 
   useEffect(() => {
     if (!isHome) {
@@ -149,6 +183,7 @@ export default function ViewerLayout() {
           </nav>
           <div className="ml-auto flex items-center gap-3">
             <SearchBox />
+            {!watching && <RefreshButton onDone={() => setDataKey((k) => k + 1)} />}
             <ProfileMenu />
           </div>
         </div>
@@ -158,7 +193,7 @@ export default function ViewerLayout() {
         <div className="border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-center text-sm text-amber-100" role="status">{brand.notice}</div>
       )}
 
-      <main className="mx-auto w-full max-w-7xl flex-1"><Outlet /></main>
+      <main className="mx-auto w-full max-w-7xl flex-1"><Outlet key={dataKey} /></main>
 
       <footer className="border-t border-fg/10 px-4 py-6 text-center text-xs text-fg/50">
         <p>{brand.footerText || brand.displayName}</p>

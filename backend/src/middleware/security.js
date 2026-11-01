@@ -8,7 +8,7 @@ export function securityHeaders() {
     useDefaults: false,
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'"],
+      scriptSrc: ["'self'", 'https://www.gstatic.com'],
       styleSrc: ["'self'", "'unsafe-inline'"],
       // Ícones e capas vêm das fontes autorizadas de cada assinante.
       imgSrc: ["'self'", 'data:', 'blob:', 'https:', 'http:'],

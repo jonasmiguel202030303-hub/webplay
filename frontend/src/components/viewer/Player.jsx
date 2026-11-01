@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Crop, Loader2, Maximize, Minimize, Pause, Play, RotateCcw, RotateCw, Settings, Volume1, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft, Cast, Crop, Loader2, Maximize, Minimize, Pause, Play, RotateCcw, RotateCw, Settings, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { formatClock } from './content.js';
+import { castMessage, castStart, pickCastSource } from '../../utils/cast.js';
 
 const kindOf = (src) => (src.format === 'm3u8' || /\.m3u8(\?|$)/i.test(src.url) ? 'hls' : src.format === 'ts' || /\.ts(\?|$)/i.test(src.url) ? 'ts' : 'direct');
 
@@ -40,6 +41,45 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
   const [show, setShow] = useState(true);
   const [drag, setDrag] = useState(null);
   const [hover, setHover] = useState(null);
+  const [castState, setCastState] = useState(null);
+  const [castBusy, setCastBusy] = useState(false);
+  const [castNote, setCastNote] = useState('');
+  const castRef = useRef(null);
+  const resumeRef = useRef(null);
+  const casting = !!castState;
+
+  useEffect(() => {
+    if (!castNote) return undefined;
+    const t = setTimeout(() => setCastNote(''), 6000);
+    return () => clearTimeout(t);
+  }, [castNote]);
+  useEffect(() => () => { try { castRef.current?.stop(); } catch { /* ignora */ } }, []);
+
+  const startCast = async () => {
+    if (castBusy) return;
+    const v = videoRef.current;
+    setCastNote('');
+    if (typeof v?.webkitShowPlaybackTargetPicker === 'function') { v.webkitShowPlaybackTargetPicker(); return; }
+    const src = pickCastSource(sources);
+    if (!src) { setCastNote(castMessage('no-source')); return; }
+    setCastBusy(true);
+    try {
+      const handle = await castStart({ url: src.url, format: src.format, live, title, startAt: v?.currentTime ?? 0 });
+      v?.pause();
+      castRef.current = handle;
+      setCastState({ device: handle.device, paused: false });
+      handle.subscribe(({ paused, connected }) => {
+        if (connected) { setCastState((s) => (s ? { ...s, paused } : s)); return; }
+        resumeRef.current = live ? null : handle.lastTime();
+        castRef.current = null;
+        setCastState(null);
+      });
+    } catch (err) {
+      if (err?.code !== 'cancel') setCastNote(castMessage(err?.code));
+    } finally {
+      setCastBusy(false);
+    }
+  };
 
   const poke = useCallback(() => {
     setShow(true);
@@ -124,7 +164,8 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
   useEffect(() => {
     const video = videoRef.current;
     const list = (sources || []).filter((s) => s?.url);
-    if (!video || list.length === 0) return undefined;
+    if (!video || list.length === 0 || casting) return undefined;
+    const begin = resumeRef.current ?? startAt;
     let engine = null; // { destroy() }
     let cancelled = false;
     let failed = false;
@@ -186,7 +227,8 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
     const onLoaded = () => {
       if (resumed) return;
       resumed = true;
-      if (!live && startAt > 10 && Number.isFinite(video.duration) && startAt < video.duration - 15) video.currentTime = startAt;
+      if (!live && begin > 10 && Number.isFinite(video.duration) && begin < video.duration - 15) video.currentTime = begin;
+      resumeRef.current = null;
       cbRef.current.onReady?.(video);
     };
     const onPlaying = () => {
@@ -335,7 +377,7 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
       video.load();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sourcesKey, live, startAt, autoPlay]);
+  }, [sourcesKey, live, startAt, autoPlay, casting]);
 
   const changeLevel = (i) => {
     setLevel(i);
@@ -483,6 +525,9 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
             )}
           </div>
           <div className="flex-1" />
+          <button type="button" className={iconBtn} onClick={startCast} disabled={castBusy} aria-label="Transmitir para a TV" title="Transmitir para a TV (Chromecast, AirPlay)">
+            {castBusy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Cast className="h-5 w-5" aria-hidden />}
+          </button>
           <button type="button" className={iconBtn} onClick={() => setFit(fitMode === 'cover' ? 'contain' : 'cover')} aria-label={fitMode === 'cover' ? 'Ajustar à tela' : 'Preencher a tela'} aria-pressed={fitMode === 'cover'} title={fitMode === 'cover' ? 'Ajustar à tela' : 'Preencher a tela'}>
             <Crop className="h-5 w-5" aria-hidden />
           </button>
@@ -508,6 +553,24 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
           )}
         </div>
       </div>
+
+      {castNote && (
+        <p className="pointer-events-none absolute left-1/2 top-3 z-30 max-w-[90%] -translate-x-1/2 rounded-lg bg-black/85 px-3 py-2 text-center text-xs text-white shadow-lg" role="status">{castNote}</p>
+      )}
+
+      {casting && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-black/95 p-4 text-center text-white" role="status">
+          <Cast className="h-12 w-12 text-primary" aria-hidden />
+          <p className="text-base font-semibold sm:text-lg">Transmitindo para {castState.device}</p>
+          {title && <p className="max-w-md truncate text-sm text-white/60">{title}</p>}
+          <div className="flex items-center gap-3">
+            <button type="button" className="flex h-12 w-12 items-center justify-center rounded-full bg-white/15 transition hover:bg-white/25" onClick={() => castRef.current?.togglePause()} aria-label={castState.paused ? 'Reproduzir na TV' : 'Pausar na TV'}>
+              {castState.paused ? <Play className="ml-0.5 h-6 w-6 fill-current" aria-hidden /> : <Pause className="h-6 w-6 fill-current" aria-hidden />}
+            </button>
+            <button type="button" className="rounded-full bg-white/15 px-5 py-3 text-sm font-semibold transition hover:bg-white/25" onClick={() => castRef.current?.stop()}>Parar transmissão</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
