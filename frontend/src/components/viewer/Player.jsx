@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Cast, Crop, Loader2, Maximize, Minimize, Pause, Play, RotateCcw, RotateCw, Settings, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { formatClock } from './content.js';
 import { castMessage, castStart, pickCastSource } from '../../utils/cast.js';
+import CastDialog from './CastDialog.jsx';
 
 const kindOf = (src) => (src.format === 'm3u8' || /\.m3u8(\?|$)/i.test(src.url) ? 'hls' : src.format === 'ts' || /\.ts(\?|$)/i.test(src.url) ? 'ts' : 'direct');
 
@@ -44,6 +45,8 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
   const [castState, setCastState] = useState(null);
   const [castBusy, setCastBusy] = useState(false);
   const [castNote, setCastNote] = useState('');
+  const [castOpen, setCastOpen] = useState(false);
+  const [airplayOk] = useState(() => typeof window !== 'undefined' && typeof window.WebKitPlaybackTargetAvailabilityEvent !== 'undefined');
   const castRef = useRef(null);
   const resumeRef = useRef(null);
   const casting = !!castState;
@@ -55,11 +58,16 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
   }, [castNote]);
   useEffect(() => () => { try { castRef.current?.stop(); } catch { /* ignora */ } }, []);
 
+  const pickAirplay = () => {
+    videoRef.current?.webkitShowPlaybackTargetPicker?.();
+    setCastOpen(false);
+  };
+
   const startCast = async () => {
     if (castBusy) return;
     const v = videoRef.current;
     setCastNote('');
-    if (typeof v?.webkitShowPlaybackTargetPicker === 'function') { v.webkitShowPlaybackTargetPicker(); return; }
+    if (airplayOk && !/Chrome|Edg\//.test(navigator.userAgent)) { pickAirplay(); return; }
     const src = pickCastSource(sources);
     if (!src) { setCastNote(castMessage('no-source')); return; }
     setCastBusy(true);
@@ -67,6 +75,7 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
       const handle = await castStart({ url: src.url, format: src.format, live, title, startAt: v?.currentTime ?? 0 });
       v?.pause();
       castRef.current = handle;
+      setCastOpen(false);
       setCastState({ device: handle.device, paused: false });
       handle.subscribe(({ paused, connected }) => {
         if (connected) { setCastState((s) => (s ? { ...s, paused } : s)); return; }
@@ -527,8 +536,8 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
             </div>
           )}
           <div className="flex-1" />
-          <button type="button" className={iconBtn} onClick={startCast} disabled={castBusy} aria-label="Transmitir para a TV" title="Transmitir para a TV (Chromecast, AirPlay)">
-            {castBusy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Cast className="h-5 w-5" aria-hidden />}
+          <button type="button" className={iconBtn} onClick={() => { setCastNote(''); setCastOpen(true); }} aria-label="Transmitir para a TV" title="Transmitir para a TV (Smart TV, TV Box, Fire Stick, Chromecast)">
+            <Cast className="h-5 w-5" aria-hidden />
           </button>
           <button type="button" className={iconBtn} onClick={() => setFit(FIT_NEXT[fitMode])} aria-label={`Modo da imagem: ${FIT_LABEL[fitMode]}`} title={`Imagem: ${FIT_LABEL[fitMode]} (clique para alternar)`}>
             <Crop className="h-5 w-5" aria-hidden />
@@ -556,7 +565,11 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
         </div>
       </div>
 
-      {castNote && (
+      {castOpen && !casting && (
+        <CastDialog onClose={() => setCastOpen(false)} onSearch={startCast} busy={castBusy} note={castNote} airplay={airplayOk} onAirplay={pickAirplay} />
+      )}
+
+      {castNote && !castOpen && (
         <p className="pointer-events-none absolute left-1/2 top-3 z-30 max-w-[90%] -translate-x-1/2 rounded-lg bg-black/85 px-3 py-2 text-center text-xs text-white shadow-lg" role="status">{castNote}</p>
       )}
 
