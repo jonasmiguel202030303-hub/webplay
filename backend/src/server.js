@@ -7,18 +7,14 @@ import { runMigrations } from '../database/migrate.js';
 
 assertProductionConfig(config);
 
-// Aplica migrações pendentes antes de aceitar tráfego (idempotente); se falhar, sobe mesmo assim e registra o erro.
-try {
-  await runMigrations({ log: (m) => logger.info(m) });
-} catch (err) {
-  logger.error('Falha ao aplicar migrações', { error: err });
-}
-
 const app = createApp();
 const server = app.listen(config.port, () => {
   logger.info(`WebPlay Brasil API em http://localhost:${config.port} (${config.nodeEnv})`);
 });
 startJobs();
+
+// Sem top-level await (hosts que carregam via require() falham com ele); idempotente e em segundo plano.
+runMigrations({ log: (m) => logger.info(m) }).catch((err) => logger.error('Falha ao aplicar migrações', { error: err }));
 
 let closing = false;
 async function shutdown(signal) {
