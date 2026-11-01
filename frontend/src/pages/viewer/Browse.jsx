@@ -14,7 +14,7 @@ import { useTitle } from '../../hooks/useTitle.js';
 
 const PAGE_SIZE = 40;
 const LABELS = {
-  live: { title: 'Canais ao vivo', empty: 'Nenhum canal encontrado.', filter: 'canais' },
+  live: { title: 'Canais', empty: 'Nenhum canal encontrado.', filter: 'canais' },
   vod: { title: 'Filmes', empty: 'Nenhum filme encontrado.', filter: 'filmes' },
   series: { title: 'Séries', empty: 'Nenhuma série encontrada.', filter: 'séries' },
 };

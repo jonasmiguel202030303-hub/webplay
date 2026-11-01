@@ -32,7 +32,7 @@ export const episodePath = (slug, { serverId, seriesId, episodeId, ext }) => {
 
 export const contentRef = (c) => ({ serverId: Number(c.serverId), contentType: c.type, streamId: c.streamId, name: c.name, icon: c.icon });
 
-export const TYPE_LABEL = { live: 'Canal ao vivo', vod: 'Filme', series: 'Série' };
+export const TYPE_LABEL = { live: 'Canal', vod: 'Filme', series: 'Série' };
 
 export function formatClock(totalSeconds) {
   const s = Math.max(0, Math.floor(totalSeconds || 0));

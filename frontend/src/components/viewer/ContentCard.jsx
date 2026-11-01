@@ -54,7 +54,6 @@ export default function ContentCard({ content, className = '' }) {
             <Play className="h-5 w-5 translate-x-0.5 fill-black text-black" />
           </span>
         </span>
-        {live && <span className="absolute left-1.5 top-1.5 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">Ao vivo</span>}
         {content.type === 'series' && <span className="absolute right-1.5 top-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">Série</span>}
         {!live && (
           <div className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-black/90 via-black/60 to-transparent px-2 pb-1.5 pt-6 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">

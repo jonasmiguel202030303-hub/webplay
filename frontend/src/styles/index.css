@@ -51,6 +51,45 @@ body {
   outline-offset: 2px;
 }
 
+/* Controle de volume do player: trilho fino com preenchimento e bolinha. */
+.vol-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 16px;
+  background: transparent;
+}
+.vol-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, #fff var(--v, 100%), rgb(255 255 255 / 0.3) var(--v, 100%));
+}
+.vol-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  border-radius: 9999px;
+  background: #fff;
+}
+.vol-range::-moz-range-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.3);
+}
+.vol-range::-moz-range-progress {
+  height: 4px;
+  border-radius: 9999px;
+  background: #fff;
+}
+.vol-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 9999px;
+  background: #fff;
+}
+
 @layer components {
   .btn {
     @apply inline-flex min-h-[40px] items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50;

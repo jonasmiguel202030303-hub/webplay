@@ -203,7 +203,7 @@ function LiveBody({ content, onClose }) {
       <div className="space-y-4 px-5 pb-6 pt-4 sm:px-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-fg/60"><span className="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">Ao vivo</span> {TYPE_LABEL.live}</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-fg/60">{TYPE_LABEL.live}</p>
             <h2 id="content-modal-title" className="mt-1 truncate text-xl font-bold sm:text-2xl">{content.name}</h2>
           </div>
           <div className="flex gap-2">

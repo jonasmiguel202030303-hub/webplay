@@ -205,7 +205,7 @@ export default function Watch() {
   const choice = cur.decision ?? (restart ? 'restart' : resumeParam ? 'resume' : null);
   const needsChoice = hasProgress && !choice;
   const startAt = hasProgress && choice === 'resume' ? prog.positionSeconds : 0;
-  const label = live ? 'Ao vivo' : isSeries ? 'Série' : 'Filme';
+  const label = live ? 'Canal' : isSeries ? 'Série' : 'Filme';
 
   const INTRO_SKIP_SECONDS = 85;
   const showIntro = isSeries && !cur.introDone && cur.t >= 3 && cur.t <= 150;
@@ -279,7 +279,7 @@ export default function Watch() {
               <div className="min-w-0">
                 <h1 className="truncate text-xl font-bold sm:text-2xl">{play.stream.name}</h1>
                 <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-fg/60">
-                  {live ? <span className="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">Ao vivo</span> : <span>{label}</span>}
+                  <span>{label}</span>
                   {current && <span>T{current.season}:E{current.number ?? idx + 1} — {current.title}</span>}
                   {play.stream.year && <span>{play.stream.year}</span>}
                   {startAt > 10 && <span>Retomando de onde você parou</span>}

@@ -387,7 +387,10 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
   const levelLabel = (l) => (l.height ? `${l.height}p` : `${Math.round(l.bitrate / 1000)} kbps`);
 
   const visible = show || ui.paused || menu || drag !== null;
-  const fitMode = fit ?? (fs && coarse ? 'cover' : 'contain');
+  // Celular em tela cheia: estica até as bordas, sem barras pretas e sem cortar a imagem.
+  const fitMode = fit ?? (fs && coarse ? 'fill' : 'contain');
+  const FIT_NEXT = { fill: 'contain', contain: 'cover', cover: 'fill' };
+  const FIT_LABEL = { fill: 'Esticar a imagem', contain: 'Ajustar à tela', cover: 'Preencher cortando' };
   const frac = drag ?? (ui.d > 0 ? Math.min(1, ui.t / ui.d) : 0);
   const bufFrac = ui.d > 0 ? Math.min(1, ui.buffered / ui.d) : 0;
   const barEvent = (e) => {
@@ -408,7 +411,7 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
       onMouseLeave={() => { hovering.current = false; if (!videoRef.current?.paused) setShow(false); }}
       onPointerMove={(e) => { if (e.pointerType === 'mouse') poke(); }}
     >
-      <video ref={videoRef} className={`h-full w-full bg-black ${fitMode === 'cover' ? 'object-cover' : 'object-contain'}`} playsInline aria-label={title} />
+      <video ref={videoRef} className={`h-full w-full bg-black ${fitMode === 'cover' ? 'object-cover' : fitMode === 'fill' ? 'object-fill' : 'object-contain'}`} playsInline aria-label={title} />
 
       <div
         className="absolute inset-0"
@@ -514,21 +517,20 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
               value={muted ? 0 : volume}
               onChange={(e) => setVol(Number(e.target.value))}
               aria-label="Volume"
-              className="ml-1 hidden h-1 w-0 cursor-pointer accent-white transition-all group-hover/vol:w-20 focus:w-20 sm:block"
+              style={{ '--v': `${(muted ? 0 : volume) * 100}%` }}
+              className="vol-range ml-1 hidden w-0 cursor-pointer opacity-0 transition-all group-hover/vol:w-24 group-hover/vol:opacity-100 focus:w-24 focus:opacity-100 sm:block"
             />
           </div>
-          <div className="ml-1 text-sm font-medium tabular-nums">
-            {live ? (
-              <span className="inline-flex items-center gap-1.5 rounded bg-red-600 px-2 py-0.5 text-xs font-bold uppercase">Ao vivo</span>
-            ) : (
+          {!live && (
+            <div className="ml-1 text-sm font-medium tabular-nums">
               <span>{formatClock(ui.t)} <span className="text-white/60">/ {formatClock(ui.d)}</span></span>
-            )}
-          </div>
+            </div>
+          )}
           <div className="flex-1" />
           <button type="button" className={iconBtn} onClick={startCast} disabled={castBusy} aria-label="Transmitir para a TV" title="Transmitir para a TV (Chromecast, AirPlay)">
             {castBusy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Cast className="h-5 w-5" aria-hidden />}
           </button>
-          <button type="button" className={iconBtn} onClick={() => setFit(fitMode === 'cover' ? 'contain' : 'cover')} aria-label={fitMode === 'cover' ? 'Ajustar à tela' : 'Preencher a tela'} aria-pressed={fitMode === 'cover'} title={fitMode === 'cover' ? 'Ajustar à tela' : 'Preencher a tela'}>
+          <button type="button" className={iconBtn} onClick={() => setFit(FIT_NEXT[fitMode])} aria-label={`Modo da imagem: ${FIT_LABEL[fitMode]}`} title={`Imagem: ${FIT_LABEL[fitMode]} (clique para alternar)`}>
             <Crop className="h-5 w-5" aria-hidden />
           </button>
           {levels.length > 1 && (
