@@ -12,6 +12,7 @@ import {
 import * as viewers from '../services/viewerService.js';
 import * as sources from '../services/sourceService.js';
 import * as catalog from '../services/catalogService.js';
+import { getBackdrop } from '../services/tmdbService.js';
 import { VIEWER_COOKIE, cookieOptions, signAdultUnlockToken, verifyToken, viewerCookieMaxAge } from '../utils/tokens.js';
 
 const router = Router({ mergeParams: true });
@@ -141,6 +142,20 @@ router.get('/servers', asyncHandler(async (req, res) => {
 router.get('/home', asyncHandler(async (req, res) => {
   const serverId = await catalog.resolveServerId(req.tenant.id, req.query.serverId);
   res.json(await catalog.buildHome(req.tenant.id, serverId, req.profile, { hideAdult: !!req.viewer.adult_control_enabled }));
+}));
+
+router.get('/backdrops', asyncHandler(async (req, res) => {
+  let items;
+  try { items = JSON.parse(String(req.query.items ?? '[]')); } catch { throw badRequest('Lista inválida.', 'INVALID_ITEMS'); }
+  if (!Array.isArray(items) || items.length > 8) throw badRequest('Lista inválida.', 'INVALID_ITEMS');
+  const urls = await Promise.all(items.map((i) => {
+    const type = i?.type === 'series' ? 'series' : 'vod';
+    const name = typeof i?.name === 'string' ? i.name.slice(0, 120) : '';
+    const year = /^\d{4}$/.test(String(i?.year ?? '')) ? String(i.year) : undefined;
+    return getBackdrop({ type, name, year });
+  }));
+  res.set('Cache-Control', 'private, max-age=3600');
+  res.json({ urls });
 }));
 
 router.get('/search', asyncHandler(async (req, res) => {

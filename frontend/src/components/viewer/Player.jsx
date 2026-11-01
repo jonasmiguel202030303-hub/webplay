@@ -399,7 +399,7 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
       )}
 
       {/* Controles centrais */}
-      {!(ui.waiting && !ui.paused) && (
+      {!(ui.waiting && !ui.paused) && !reconnecting && (
         <div className={`pointer-events-none absolute inset-0 flex items-center justify-center gap-8 sm:gap-14 ${group}`}>
           {!live && ui.d > 0 && (
             <button type="button" className="pointer-events-auto relative flex h-12 w-12 items-center justify-center rounded-full text-white transition hover:bg-white/15 active:scale-95 sm:h-14 sm:w-14" onClick={(e) => { stop(e); skip(-10); }} aria-label="Voltar 10 segundos">
@@ -420,7 +420,7 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
       )}
 
       {/* Barra inferior */}
-      <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-3 pb-2 pt-12 sm:px-5 sm:pb-3 ${group}`} onClick={stop}>
+      <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-3 pb-3 pt-12 sm:px-5 sm:pb-4 ${group}`} onClick={stop}>
         {!live && (
           <div
             ref={barRef}
@@ -431,7 +431,7 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
             aria-valuemax={Math.floor(ui.d)}
             aria-valuenow={Math.floor(ui.t)}
             aria-valuetext={`${formatClock(ui.t)} de ${formatClock(ui.d)}`}
-            className="group/bar relative flex h-9 w-full cursor-pointer touch-none items-center"
+            className="group/bar relative mb-2 flex h-9 w-full cursor-pointer touch-none items-center"
             onPointerDown={(e) => { if (!ui.d) return; e.currentTarget.setPointerCapture(e.pointerId); setDrag(barEvent(e)); }}
             onPointerMove={(e) => { const f = barEvent(e); setHover(f); if (drag !== null) setDrag(f); }}
             onPointerUp={() => { if (drag !== null) { seekTo(drag * ui.d); setDrag(null); poke(); } }}
@@ -458,7 +458,7 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
           </div>
         )}
 
-        <div className="flex items-center gap-0.5 text-white sm:gap-1.5">
+        <div className="flex items-center gap-1.5 text-white sm:gap-3">
           <button type="button" className={iconBtn} onClick={togglePlay} aria-label={ui.paused ? 'Reproduzir' : 'Pausar'}>
             {ui.paused ? <Play className="h-6 w-6 fill-current" aria-hidden /> : <Pause className="h-6 w-6 fill-current" aria-hidden />}
           </button>
@@ -472,7 +472,7 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
               value={muted ? 0 : volume}
               onChange={(e) => setVol(Number(e.target.value))}
               aria-label="Volume"
-              className="hidden h-1 w-0 cursor-pointer accent-white transition-all group-hover/vol:w-20 focus:w-20 sm:block"
+              className="ml-1 hidden h-1 w-0 cursor-pointer accent-white transition-all group-hover/vol:w-20 focus:w-20 sm:block"
             />
           </div>
           <div className="ml-1 text-sm font-medium tabular-nums">

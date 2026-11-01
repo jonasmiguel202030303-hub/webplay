@@ -39,6 +39,32 @@ const cleanTitle = (name) => String(name ?? '')
 const enrichCache = new Map();
 const ENRICH_TTL_MS = 24 * 3600_000;
 
+const BACKDROP_BASE = 'https://image.tmdb.org/t/p/w1280';
+const backdropCache = new Map();
+
+/** Capa horizontal (backdrop) da TMDB para o fundo do destaque. Nunca falha: sem chave/rede/resultado devolve null. */
+export async function getBackdrop({ type, name, year }) {
+  const title = cleanTitle(name);
+  if (!title) return null;
+  const kind = type === 'series' ? 'tv' : 'movie';
+  const key = `${kind}:${title.toLowerCase()}:${year ?? ''}`;
+  const hit = backdropCache.get(key);
+  if (hit && Date.now() - hit.at < ENRICH_TTL_MS) return hit.url;
+  let url = null;
+  try {
+    const yearParam = year ? `&${kind === 'tv' ? 'first_air_date_year' : 'year'}=${encodeURIComponent(year)}` : '';
+    let results = await fetchPage(`search/${kind}?language=pt-BR&query=${encodeURIComponent(title)}${yearParam}`);
+    if (!results.length && yearParam) results = await fetchPage(`search/${kind}?language=pt-BR&query=${encodeURIComponent(title)}`);
+    const found = results.find((r) => r.backdrop_path);
+    if (found) url = `${BACKDROP_BASE}${found.backdrop_path}`;
+  } catch (err) {
+    logger.warn('Falha ao buscar backdrop na TMDB', { erro: err?.message });
+  }
+  backdropCache.set(key, { at: Date.now(), url });
+  if (backdropCache.size > 500) backdropCache.delete(backdropCache.keys().next().value);
+  return url;
+}
+
 /**
  * Elenco com foto (e, para séries, a imagem de cada episódio) vindos da TMDB. Nunca falha: sem chave/rede devolve vazio.
  * `seasons` são os números das temporadas existentes na fonte.

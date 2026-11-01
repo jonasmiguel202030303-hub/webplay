@@ -11,15 +11,27 @@ const waLink = (n) => `https://wa.me/${String(n).replace(/\D/g, '')}`;
  * com os textos, imagem e links configurados pelo assinante.
  */
 export default function Banner({ featured = [] }) {
-  const { tenant } = useViewer();
+  const { tenant, svc } = useViewer();
   const modal = useContentModal();
   const { brand } = tenant;
   const image = brand.assets.banner;
   const links = brand.externalLinks ?? [];
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [backdrops, setBackdrops] = useState({});
   const list = featured.slice(0, 6);
   const current = list.length ? list[index % list.length] : null;
+  const listKey = list.map((c) => `${c.type}:${c.streamId}`).join('|');
+
+  useEffect(() => {
+    if (!list.length) return undefined;
+    let alive = true;
+    svc.backdrops(list.map((c) => ({ type: c.type, name: c.name, year: c.year })))
+      .then((r) => alive && setBackdrops(Object.fromEntries(list.map((c, i) => [`${c.type}:${c.streamId}`, r.urls?.[i] ?? null]))))
+      .catch(() => {});
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listKey, svc]);
 
   useEffect(() => {
     if (list.length < 2 || paused) return undefined;
@@ -27,7 +39,9 @@ export default function Banner({ featured = [] }) {
     return () => clearInterval(t);
   }, [list.length, paused]);
 
-  const bg = image || current?.icon;
+  const backdrop = current ? backdrops[`${current.type}:${current.streamId}`] : null;
+  const bg = backdrop || image || current?.icon;
+  const wide = !!(backdrop || image);
   return (
     <section
       className="relative isolate overflow-hidden border-b border-fg/10"
@@ -41,7 +55,7 @@ export default function Banner({ featured = [] }) {
           src={bg}
           alt=""
           referrerPolicy="no-referrer"
-          className={`absolute inset-0 -z-10 h-full w-full animate-fade-in object-cover ${image ? '' : 'object-top md:scale-110 md:object-center md:blur-2xl'}`}
+          className={`absolute inset-0 -z-10 h-full w-full animate-fade-in object-cover ${wide ? 'object-center' : 'object-top md:scale-110 md:object-center md:blur-2xl'}`}
           onError={(e) => { e.currentTarget.style.display = 'none'; }}
         />
       )}
