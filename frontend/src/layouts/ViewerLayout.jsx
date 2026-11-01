@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Clock, Heart, Home, LogOut, RefreshCw, Search, Tv, User, Users, Film, Clapperboard, Volume2, VolumeX } from 'lucide-react';
+import { Clock, Heart, Home, LogOut, MessageCircle, RefreshCw, Search, Tv, User, Users, Film, Clapperboard, Volume2, VolumeX } from 'lucide-react';
 import BrandLogo from '../components/viewer/BrandLogo.jsx';
 import ProfileAvatar from '../components/viewer/ProfileAvatar.jsx';
+import NewsBell from '../components/viewer/NewsBell.jsx';
+import ChatWidget from '../components/viewer/ChatWidget.jsx';
 import { ContentModalProvider } from '../components/viewer/ContentModal.jsx';
 import WhatsAppFloat from '../components/WhatsAppFloat.jsx';
 import { setSoundEnabled, playPreview, useSoundEnabled } from '../utils/sound.js';
+import { setChatPref, useChatPref } from '../utils/chatPref.js';
 import { useViewer } from '../contexts/ViewerContext.jsx';
 import { useToast } from '../contexts/ToastContext.jsx';
 
@@ -24,6 +27,7 @@ function ProfileMenu() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const soundOn = useSoundEnabled();
+  const chatOn = useChatPref(slug);
   const ref = useRef(null);
 
   useEffect(() => {
@@ -70,6 +74,11 @@ function ProfileMenu() {
               }}
             >
               {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />} Som: {soundOn ? 'ligado' : 'desligado'}
+            </button>
+          )}
+          {tenant.chatEnabled !== false && !profile.isKids && (
+            <button type="button" role="menuitemcheckbox" aria-checked={chatOn} className={item} onClick={() => setChatPref(slug, !chatOn)}>
+              <MessageCircle className="h-4 w-4" /> Chat: {chatOn ? 'ligado' : 'desligado'}
             </button>
           )}
           <button
@@ -184,6 +193,7 @@ export default function ViewerLayout() {
           <div className="ml-auto flex items-center gap-3">
             <SearchBox />
             {!watching && <RefreshButton onDone={() => setDataKey((k) => k + 1)} />}
+            {!watching && <NewsBell reloadKey={dataKey} />}
             <ProfileMenu />
           </div>
         </div>
@@ -217,6 +227,7 @@ export default function ViewerLayout() {
           </NavLink>
         ))}
       </nav>
+      {!watching && <ChatWidget />}
       {!watching && <WhatsAppFloat phone={brand.whatsapp} message={`Olá! Preciso de ajuda com ${brand.displayName}.`} className="bottom-20 right-4 md:bottom-6 md:right-6" />}
     </div>
     </ContentModalProvider>

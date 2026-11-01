@@ -331,6 +331,43 @@ export async function getStream(tenantId, serverId, type, streamId) {
   return stream;
 }
 
+export const NEWS_WINDOW_MS = 7 * 24 * 3600 * 1000;
+
+/**
+ * Novidades da fonte: canais, filmes e séries cuja data de inclusão (`added`) é recente, da mais nova para a mais antiga.
+ * Com `allowFetch` falso usa só o cache em memória (consulta de fundo do sininho, sem bater na fonte).
+ */
+export async function listNews(tenantId, serverId, { kidsOnly = false, hide = {}, since = 0, allowFetch = false, limit = 100 } = {}) {
+  const now = Date.now();
+  const from = Math.max(since, now - NEWS_WINDOW_MS);
+  const found = [];
+  await Promise.all(['live', 'vod', 'series'].map(async (type) => {
+    let list = null;
+    if (allowFetch) {
+      list = await allStreams(tenantId, serverId, type).catch(() => null);
+    } else {
+      list = memCache.get(`${serverId}:${lineKey()}:${type}`)?.data ?? null;
+    }
+    if (!list) return;
+    let kidsIds = null;
+    if (kidsOnly) {
+      const { categories } = await getCategories(tenantId, serverId, type, { kidsOnly: true }).catch(() => ({ categories: [] }));
+      kidsIds = new Set(categories.map((c) => c.id));
+    }
+    const hidden = hide[type];
+    for (const s of list) {
+      const t = s.addedAt ? Date.parse(s.addedAt) : NaN;
+      if (!Number.isFinite(t) || t <= from || t > now + 24 * 3600 * 1000) continue;
+      if (hidden?.size && hidden.has(String(s.categoryId))) continue;
+      if (kidsIds && !kidsIds.has(s.categoryId)) continue;
+      const { _fold, ...item } = s;
+      found.push({ ...item, _t: t });
+    }
+  }));
+  found.sort((a, b) => b._t - a._t);
+  return found.slice(0, limit).map(({ _t, ...item }) => item);
+}
+
 /** Cache pequeno (detalhes, EPG) separado do cache das listas grandes, para não expulsá-las. */
 const smallCache = new Map();
 async function cachedSmall(key, ttlMs, loader) {

@@ -100,6 +100,12 @@ export const tenantSettingsSchema = z.object({
   maxSessionsPerViewer: z.number().int().min(1).max(10),
   catalogCacheTtlSeconds: z.number().int().min(60).max(86400),
   uiSoundsEnabled: z.boolean(),
+  chatEnabled: z.boolean().optional(),
+  chatBannedWords: z.string().max(4000, 'Lista de palavras muito longa.').optional(),
+});
+
+export const chatMessageSchema = z.object({
+  body: z.string({ error: 'Escreva uma mensagem.' }).max(1000, 'Mensagem muito longa.'),
 });
 
 export const serverCreateSchema = z.object({

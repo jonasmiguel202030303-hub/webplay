@@ -118,7 +118,7 @@ export async function requireProfile(req, _res, next) {
       [id, req.viewer.id, req.tenant.id],
     );
     if (!profile) throw forbidden('Perfil inválido.', 'PROFILE_REQUIRED');
-    req.profile = { id: profile.id, name: profile.name, isKids: !!profile.is_kids };
+    req.profile = { id: profile.id, name: profile.name, avatar: profile.avatar, isKids: !!profile.is_kids };
     next();
   } catch (err) {
     next(err);

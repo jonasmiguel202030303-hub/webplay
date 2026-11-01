@@ -1,6 +1,8 @@
 import { query, queryOne, isDuplicateError, parseJson } from '../config/db.js';
 import { conflict, notFound } from '../utils/errors.js';
 import { audit } from './auditService.js';
+import { clearChatSettingsCache } from './chatService.js';
+import { parseWordList } from '../utils/chatFilter.js';
 import { getAccess, getSubscriptionView, syncExpiryNotifications } from './subscriptionService.js';
 
 const slugCache = new Map();
@@ -94,6 +96,8 @@ export const settingsView = (row) => ({
   maxSessionsPerViewer: row.max_sessions_per_viewer,
   catalogCacheTtlSeconds: row.catalog_cache_ttl_seconds,
   uiSoundsEnabled: !!row.ui_sounds_enabled,
+  chatEnabled: row.chat_enabled === undefined ? true : !!row.chat_enabled,
+  chatBannedWords: row.chat_banned_words ?? '',
 });
 
 export async function getTenantSettingsRow(tenantId) {
@@ -109,9 +113,16 @@ export async function getTenantSettings(tenantId) {
 export async function updateTenantSettings(req, tenantId, d) {
   await query(
     `UPDATE tenant_settings SET allow_viewer_signup = ?, kids_profiles_enabled = ?, max_profiles_per_viewer = ?,
-       max_sessions_per_viewer = ?, catalog_cache_ttl_seconds = ?, ui_sounds_enabled = ? WHERE tenant_id = ?`,
-    [d.allowViewerSignup ? 1 : 0, d.kidsProfilesEnabled ? 1 : 0, d.maxProfilesPerViewer, d.maxSessionsPerViewer, d.catalogCacheTtlSeconds, d.uiSoundsEnabled ? 1 : 0, tenantId],
+       max_sessions_per_viewer = ?, catalog_cache_ttl_seconds = ?, ui_sounds_enabled = ?,
+       chat_enabled = COALESCE(?, chat_enabled), chat_banned_words = COALESCE(?, chat_banned_words) WHERE tenant_id = ?`,
+    [
+      d.allowViewerSignup ? 1 : 0, d.kidsProfilesEnabled ? 1 : 0, d.maxProfilesPerViewer, d.maxSessionsPerViewer, d.catalogCacheTtlSeconds, d.uiSoundsEnabled ? 1 : 0,
+      d.chatEnabled === undefined ? null : d.chatEnabled ? 1 : 0,
+      d.chatBannedWords === undefined ? null : parseWordList(d.chatBannedWords).join('\n'),
+      tenantId,
+    ],
   );
+  clearChatSettingsCache(tenantId);
   await audit(req, { action: 'tenant.settings_update', entityType: 'tenant', entityId: tenantId });
   return getTenantSettings(tenantId);
 }
@@ -128,6 +139,7 @@ export async function getPublicTenant(slug) {
     kidsProfilesEnabled: settings.kidsProfilesEnabled,
     maxProfilesPerViewer: settings.maxProfilesPerViewer,
     uiSoundsEnabled: settings.uiSoundsEnabled,
+    chatEnabled: settings.chatEnabled,
     available: access.hasAccess,
   };
 }

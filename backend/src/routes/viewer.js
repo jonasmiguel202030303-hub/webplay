@@ -7,11 +7,13 @@ import { noStore } from '../middleware/security.js';
 import { authenticateViewer, bindViewerLine, requireActiveLine, requireActiveSubscription, requireProfile, resolveTenantFromSlug } from '../middleware/auth.js';
 import {
   viewerRegisterSchema, loginSchema, lineLoginSchema, emailOnlySchema, resetSchema, profileSchema, contentRef, progressSchema, viewerDeleteSchema,
-  adultControlSchema, adultControlVerifySchema,
+  adultControlSchema, adultControlVerifySchema, chatMessageSchema,
 } from '../validators/schemas.js';
 import * as viewers from '../services/viewerService.js';
 import * as sources from '../services/sourceService.js';
 import * as catalog from '../services/catalogService.js';
+import * as chat from '../services/chatService.js';
+import * as news from '../services/newsService.js';
 import { getBackdrop } from '../services/tmdbService.js';
 import { VIEWER_COOKIE, cookieOptions, signAdultUnlockToken, verifyToken, viewerCookieMaxAge } from '../utils/tokens.js';
 
@@ -147,6 +149,32 @@ router.get('/home', asyncHandler(async (req, res) => {
 router.post('/catalog/refresh', sensitiveLimiter(), asyncHandler(async (req, res) => {
   const serverId = await catalog.resolveServerId(req.tenant.id, req.query.serverId);
   res.json(await sources.refreshViewerCatalog(req.tenant.id, serverId));
+}));
+
+// ----- Chat dos espectadores (consulta periódica; sem conexão aberta, por causa do proxy da hospedagem) -----
+router.get('/chat', asyncHandler(async (req, res) => {
+  const after = Math.max(0, Number.parseInt(req.query.after ?? '0', 10) || 0);
+  res.json({ meId: req.profile.id, ...(await chat.listChat(req.tenant.id, req.profile, after)) });
+}));
+
+router.post('/chat', validate(chatMessageSchema), asyncHandler(async (req, res) => {
+  res.status(201).json({ message: await chat.postChat(req.tenant.id, req.profile, req.profile.avatar, req.valid.body.body) });
+}));
+
+// ----- Sininho de novidades -----
+router.get('/news', asyncHandler(async (req, res) => {
+  const serverId = await catalog.resolveServerId(req.tenant.id, req.query.serverId);
+  res.json(await news.getNews(req, serverId, { fetch: req.query.fetch === '1' }));
+}));
+
+router.post('/news/seen', asyncHandler(async (req, res) => {
+  await news.markNewsSeen(req.profile.id);
+  res.json({ ok: true });
+}));
+
+router.post('/news/clear', asyncHandler(async (req, res) => {
+  await news.clearNews(req.profile.id);
+  res.json({ ok: true });
 }));
 
 router.get('/backdrops', asyncHandler(async (req, res) => {

@@ -67,5 +67,11 @@ export function createViewerService(slug, getProfileId) {
     clearHistory: () => del('/history'),
     saveProgress: (data, opts) => put('/progress', data, opts),
     continueWatching: () => get('/continue-watching'),
+
+    chat: (after) => get('/chat', { query: { after: after || undefined } }),
+    sendChat: (body) => post('/chat', { body }),
+    news: (serverId, fetch) => get('/news', { query: { serverId, fetch: fetch ? 1 : undefined } }),
+    markNewsSeen: () => post('/news/seen'),
+    clearNews: () => post('/news/clear'),
   };
 }
