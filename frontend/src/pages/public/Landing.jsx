@@ -140,6 +140,23 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Banner da plataforma */}
+      <section className="mx-auto max-w-6xl px-4 pt-10" aria-label="Apresentação do WebPlay">
+        <Reveal>
+          <img
+            src="/landing/banner-1280.webp"
+            srcSet="/landing/banner-800.webp 800w, /landing/banner-1280.webp 1280w, /landing/banner-1860.webp 1860w"
+            sizes="(min-width: 1152px) 1152px, 100vw"
+            width="1860"
+            height="846"
+            alt="WebPlay: plataforma white label para servidores de IPTV, com filmes, séries e canais, feita em Node.js"
+            loading="lazy"
+            decoding="async"
+            className="h-auto w-full rounded-2xl border border-fg/10 shadow-2xl shadow-primary/20"
+          />
+        </Reveal>
+      </section>
+
       {/* Faixa legal curta */}
       <div className="border-y border-fg/10 bg-fg/[0.03]">
         <p className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4 py-4 text-center text-xs text-fg/70 sm:text-sm">

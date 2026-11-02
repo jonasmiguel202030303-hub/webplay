@@ -93,7 +93,7 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
   const poke = useCallback(() => {
     setShow(true);
     clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(() => setShow(false), 3000);
+    hideTimer.current = setTimeout(() => setShow(false), 4000);
   }, []);
   useEffect(() => () => clearTimeout(hideTimer.current), []);
 
@@ -427,7 +427,9 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
         onPointerDown={(e) => { pointerType.current = e.pointerType; }}
         onClick={() => {
           if (pointerType.current === 'touch') {
-            if (visible) { clearTimeout(hideTimer.current); setShow(false); } else poke();
+            // 1º toque mostra os controles; com eles visíveis, tocar no vídeo pausa/retoma.
+            if (visible) togglePlay();
+            poke();
           } else { togglePlay(); poke(); }
         }}
         onDoubleClick={() => { if (pointerType.current !== 'touch') onToggleFs?.(); }}

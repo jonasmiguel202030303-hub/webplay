@@ -108,13 +108,13 @@ export default function ChatWidget() {
         onClick={() => setOpen(true)}
         aria-label="Abrir chat"
         title="Chat"
-        className={`fixed bottom-20 left-4 z-40 h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-black/40 ring-2 ring-white/20 transition hover:scale-110 md:bottom-6 md:left-6 ${open ? 'hidden' : 'flex'}`}
+        className={`fixed bottom-36 right-4 z-40 h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-black/40 ring-2 ring-white/20 transition hover:scale-110 md:bottom-24 md:right-6 ${open ? 'hidden' : 'flex'}`}
       >
         <MessageCircle className="h-7 w-7" aria-hidden />
       </button>
 
       {open && (
-        <section aria-label="Chat" className="fixed inset-x-3 bottom-20 z-50 flex h-[min(34rem,70vh)] animate-fade-in flex-col overflow-hidden rounded-xl border border-fg/15 bg-bg shadow-2xl md:bottom-6 md:left-6 md:right-auto md:w-96">
+        <section aria-label="Chat" className="fixed inset-x-3 bottom-20 z-50 flex h-[min(34rem,70vh)] animate-fade-in flex-col overflow-hidden rounded-xl border border-fg/15 bg-bg shadow-2xl md:bottom-6 md:left-auto md:right-6 md:w-96">
           <header className="flex items-center justify-between border-b border-fg/10 px-4 py-2.5">
             <div>
               <h2 className="text-sm font-semibold">Chat</h2>
