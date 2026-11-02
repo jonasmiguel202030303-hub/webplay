@@ -5,10 +5,10 @@
 :root {
   /* Tema padrão (WebPlay). As páginas de cada assinante substituem estes valores via utils/theme.js. */
   --c-primary: 124 58 237;
-  --c-secondary: 37 99 235;
+  --c-secondary: 37 110 255;
   --c-button: 124 58 237;
   --c-on-button: 255 255 255;
-  --c-bg: 5 5 5;
+  --c-bg: 6 6 18;
   --c-fg: 255 255 255;
 }
 
@@ -153,7 +153,18 @@ body {
 
 /* Landing pública */
 .gradient-text {
-  @apply bg-gradient-to-r from-violet-400 via-primary to-sky-400 bg-clip-text text-transparent;
+  @apply bg-gradient-to-r from-violet-300 via-violet-500 to-blue-400 bg-clip-text text-transparent;
+}
+.lp-grid {
+  background-image:
+    linear-gradient(rgb(var(--c-fg) / 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--c-fg) / 0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 80%);
+}
+.lp-stat {
+  @apply flex items-center gap-3 rounded-xl border border-fg/10 bg-fg/[0.04] p-3 backdrop-blur transition duration-300 hover:border-primary/40 hover:bg-fg/[0.07];
 }
 .lp-eyebrow {
   @apply inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-violet-200;
@@ -165,7 +176,7 @@ body {
   box-shadow: 0 0 40px -12px rgb(var(--c-primary) / 0.55);
 }
 .lp-icon {
-  @apply flex h-11 w-11 items-center justify-center rounded-xl border border-primary/30 bg-gradient-to-br from-primary/30 to-secondary/20 text-violet-200;
+  @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-gradient-to-br from-primary/35 to-secondary/25 text-violet-100;
 }
 .btn-glow {
   box-shadow: 0 8px 30px -8px rgb(var(--c-primary) / 0.7);

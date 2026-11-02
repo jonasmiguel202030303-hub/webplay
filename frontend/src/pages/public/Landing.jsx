@@ -12,10 +12,10 @@ import { useTitle } from '../../hooks/useTitle.js';
 import { formatMoney } from '../../utils/format.js';
 
 const HERO_HIGHLIGHTS = [
-  { icon: Palette, text: 'Identidade própria' },
-  { icon: LayoutDashboard, text: 'Gestão centralizada' },
-  { icon: Smartphone, text: 'PWA instalável' },
-  { icon: PlugZap, text: 'Fontes autorizadas' },
+  { icon: Palette, title: 'Identidade própria', text: 'Sua marca e suas cores' },
+  { icon: LayoutDashboard, title: 'Gestão centralizada', text: 'Tudo em um só painel' },
+  { icon: Smartphone, title: 'PWA instalável', text: 'Celular, tablet e PC' },
+  { icon: PlugZap, title: 'Fontes autorizadas', text: 'Padrão Xtream Codes' },
 ];
 
 const AUDIENCE = [
@@ -84,40 +84,28 @@ export default function Landing() {
     <>
       {/* Hero */}
       <section className="relative isolate overflow-hidden" aria-labelledby="hero-title">
-        <img
-          src="/landing/hero-1280.webp"
-          srcSet="/landing/hero-640.webp 640w, /landing/hero-1280.webp 1280w, /landing/hero-1920.webp 1920w"
-          sizes="100vw"
-          width="1920"
-          height="1080"
-          alt=""
-          aria-hidden="true"
-          fetchpriority="high"
-          decoding="async"
-          className="absolute inset-0 -z-30 h-full w-full object-cover object-[75%_center]"
-        />
-        <div className="absolute inset-0 -z-20 bg-gradient-to-r from-bg via-bg/85 to-bg/20 sm:via-bg/70" aria-hidden />
-        <div className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-bg to-transparent" aria-hidden />
-        <div className="pointer-events-none absolute -left-32 top-10 -z-10 h-96 w-96 rounded-full bg-primary/25 blur-[120px]" aria-hidden />
-        <div className="pointer-events-none absolute -right-20 bottom-10 -z-10 h-80 w-80 rounded-full bg-secondary/25 blur-[120px]" aria-hidden />
+        <div className="lp-grid absolute inset-0 -z-20" aria-hidden />
+        <div className="pointer-events-none absolute -left-40 top-0 -z-10 h-[28rem] w-[28rem] rounded-full bg-primary/30 blur-[140px]" aria-hidden />
+        <div className="pointer-events-none absolute -right-40 top-24 -z-10 h-[26rem] w-[26rem] rounded-full bg-secondary/30 blur-[140px]" aria-hidden />
+        <div className="absolute inset-x-0 bottom-0 -z-10 h-32 bg-gradient-to-t from-bg to-transparent" aria-hidden />
 
-        <div className="mx-auto max-w-6xl px-4 pb-20 pt-16 sm:pb-28 sm:pt-24 lg:pt-32">
-          <div className="max-w-2xl">
+        <div className="mx-auto max-w-6xl px-4 pt-14 sm:pt-20">
+          <div className="mx-auto max-w-3xl text-center">
             <Reveal>
               <span className="lp-eyebrow"><Layers className="h-3.5 w-3.5" aria-hidden />Plataforma white label</span>
             </Reveal>
             <Reveal delay={80}>
-              <h1 id="hero-title" className="mt-5 text-4xl font-extrabold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">
+              <h1 id="hero-title" className="mt-5 text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
                 Sua estrutura de streaming.{' '}
                 <span className="gradient-text">Sua marca. Sua plataforma.</span>
               </h1>
             </Reveal>
             <Reveal delay={160}>
-              <p className="mt-6 text-base leading-relaxed text-fg/75 sm:text-lg">
+              <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-fg/70 sm:text-lg">
                 Uma plataforma white label desenvolvida para donos de servidores, masters e revendedores que desejam oferecer uma experiência profissional aos seus clientes, com identidade visual própria e gerenciamento centralizado.
               </p>
             </Reveal>
-            <Reveal delay={240} className="mt-8 flex flex-wrap gap-3">
+            <Reveal delay={240} className="mt-8 flex flex-wrap justify-center gap-3">
               <Link to="/cadastro" className="btn btn-primary btn-glow group px-6 py-3 text-base">
                 {trialLabel}
                 <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" aria-hidden />
@@ -125,36 +113,39 @@ export default function Landing() {
               <Link to="/entrar" className="btn btn-secondary px-6 py-3 text-base backdrop-blur">Já tenho uma conta</Link>
             </Reveal>
             <Reveal delay={300}>
-              <p className="mt-3 text-xs text-fg/60">Sem cartão de crédito para começar o teste.</p>
-            </Reveal>
-            <Reveal delay={360}>
-              <ul className="mt-8 flex flex-wrap gap-2" aria-label="Destaques da plataforma">
-                {HERO_HIGHLIGHTS.map(({ icon: Icon, text }) => (
-                  <li key={text} className="inline-flex items-center gap-2 rounded-full border border-fg/10 bg-fg/5 px-3 py-1.5 text-xs font-medium text-fg/80 backdrop-blur">
-                    <Icon className="h-3.5 w-3.5 text-violet-300" aria-hidden />{text}
-                  </li>
-                ))}
-              </ul>
+              <p className="mt-3 text-xs text-fg/55">Sem cartão de crédito para começar o teste.</p>
             </Reveal>
           </div>
-        </div>
-      </section>
 
-      {/* Banner da plataforma */}
-      <section className="mx-auto max-w-6xl px-4 pt-10" aria-label="Apresentação do WebPlay">
-        <Reveal>
-          <img
-            src="/landing/banner-1280.webp"
-            srcSet="/landing/banner-800.webp 800w, /landing/banner-1280.webp 1280w, /landing/banner-1860.webp 1860w"
-            sizes="(min-width: 1152px) 1152px, 100vw"
-            width="1860"
-            height="846"
-            alt="WebPlay: plataforma white label para servidores de IPTV, com filmes, séries e canais, feita em Node.js"
-            loading="lazy"
-            decoding="async"
-            className="h-auto w-full rounded-2xl border border-fg/10 shadow-2xl shadow-primary/20"
-          />
-        </Reveal>
+          <Reveal delay={200} className="relative mx-auto mt-12 max-w-5xl sm:mt-16">
+            <div className="pointer-events-none absolute -inset-x-6 -inset-y-6 -z-10 rounded-[2rem] bg-gradient-to-r from-primary/40 via-primary/10 to-secondary/40 blur-3xl" aria-hidden />
+            <div className="rounded-2xl bg-gradient-to-br from-primary/60 via-fg/10 to-secondary/60 p-px">
+              <img
+                src="/landing/banner-1280.webp"
+                srcSet="/landing/banner-800.webp 800w, /landing/banner-1280.webp 1280w, /landing/banner-1860.webp 1860w"
+                sizes="(min-width: 1024px) 1024px, 100vw"
+                width="1860"
+                height="846"
+                alt="WebPlay: plataforma white label para servidores de IPTV, com filmes, séries e canais, feita em Node.js"
+                fetchpriority="high"
+                decoding="async"
+                className="h-auto w-full rounded-[calc(1rem-1px)] bg-bg"
+              />
+            </div>
+          </Reveal>
+
+          <ul className="mx-auto mt-10 grid max-w-5xl grid-cols-2 gap-3 pb-16 sm:grid-cols-4 sm:pb-20" aria-label="Destaques da plataforma">
+            {HERO_HIGHLIGHTS.map(({ icon: Icon, title, text }, i) => (
+              <Reveal as="li" key={title} delay={i * 80} className="lp-stat">
+                <span className="lp-icon h-10 w-10"><Icon className="h-5 w-5" aria-hidden /></span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold">{title}</span>
+                  <span className="block text-xs text-fg/55">{text}</span>
+                </span>
+              </Reveal>
+            ))}
+          </ul>
+        </div>
       </section>
 
       {/* Faixa legal curta */}
