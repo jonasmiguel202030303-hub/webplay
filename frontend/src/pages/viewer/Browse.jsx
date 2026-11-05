@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Lock, Search, SearchX } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Lock, Search, SearchX } from 'lucide-react';
 import CatalogError from '../../components/viewer/CatalogError.jsx';
 import ContentGrid from '../../components/viewer/ContentGrid.jsx';
 import AdultPinModal from '../../components/viewer/AdultPinModal.jsx';
@@ -33,6 +33,15 @@ export default function Browse({ type }) {
   const [unlockedAdultId, setUnlockedAdultId] = useState(null);
   const unlockedRef = useRef(null);
   const [pendingCategory, setPendingCategory] = useState(null);
+  // Setas de navegação das categorias: no desktop (mouse) não dá para arrastar com o dedo como no celular.
+  const catsRef = useRef(null);
+  const [catEdges, setCatEdges] = useState({ start: true, end: true });
+  const updateCatEdges = useCallback(() => {
+    const el = catsRef.current;
+    if (!el) return;
+    setCatEdges({ start: el.scrollLeft <= 4, end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 4 });
+  }, []);
+  const scrollCats = (dir) => catsRef.current?.scrollBy({ left: dir * catsRef.current.clientWidth * 0.8, behavior: 'smooth' });
 
   const update = (changes) => {
     const next = new URLSearchParams(params);
@@ -66,6 +75,14 @@ export default function Browse({ type }) {
   }, [categoryId]);
 
   const cats = useAsync(() => svc.categories(type), [svc, type, profile.id]);
+  useEffect(() => {
+    updateCatEdges();
+    const el = catsRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(updateCatEdges);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [updateCatEdges, cats.data]);
   const adultOn = !!viewer?.adultControlEnabled;
   const activeCategory = cats.data?.categories.find((c) => c.id === categoryId);
   const checking = adultOn && !!categoryId && !cats.data;
@@ -102,14 +119,40 @@ export default function Browse({ type }) {
       {cats.data?.warning && <p className="text-xs text-amber-300">{cats.data.warning}</p>}
 
       {categories.length > 0 && (
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="group" aria-label="Categorias">
-          <button type="button" className={chip(!categoryId)} aria-pressed={!categoryId} onClick={() => selectCategory(null)}>Todas</button>
-          {categories.map((c) => (
-            <button key={c.id} type="button" className={chip(categoryId === c.id)} aria-pressed={categoryId === c.id} onClick={() => selectCategory(c)}>
-              {c.isAdult && adultOn && unlockedAdultId !== c.id && <Lock className="mr-1 inline h-3 w-3 align-[-1px]" aria-hidden />}
-              {c.name}
-            </button>
-          ))}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => scrollCats(-1)}
+            disabled={catEdges.start}
+            aria-label="Categoria anterior"
+            className="absolute -left-1 top-1/2 z-10 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-bg/90 text-fg shadow ring-1 ring-fg/20 hover:bg-bg disabled:hidden md:flex"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <div
+            ref={catsRef}
+            onScroll={updateCatEdges}
+            className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 md:px-9 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            role="group"
+            aria-label="Categorias"
+          >
+            <button type="button" className={chip(!categoryId)} aria-pressed={!categoryId} onClick={() => selectCategory(null)}>Todas</button>
+            {categories.map((c) => (
+              <button key={c.id} type="button" className={chip(categoryId === c.id)} aria-pressed={categoryId === c.id} onClick={() => selectCategory(c)}>
+                {c.isAdult && adultOn && unlockedAdultId !== c.id && <Lock className="mr-1 inline h-3 w-3 align-[-1px]" aria-hidden />}
+                {c.name}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => scrollCats(1)}
+            disabled={catEdges.end}
+            aria-label="Próxima categoria"
+            className="absolute -right-1 top-1/2 z-10 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-bg/90 text-fg shadow ring-1 ring-fg/20 hover:bg-bg disabled:hidden md:flex"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
       )}
 

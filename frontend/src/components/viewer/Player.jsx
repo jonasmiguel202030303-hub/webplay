@@ -5,6 +5,12 @@ import { castMessage, castStart, pickCastSource } from '../../utils/cast.js';
 import CastDialog from './CastDialog.jsx';
 
 const kindOf = (src) => (src.format === 'm3u8' || /\.m3u8(\?|$)/i.test(src.url) ? 'hls' : src.format === 'ts' || /\.ts(\?|$)/i.test(src.url) ? 'ts' : 'direct');
+// MIME por extensão para checar suporte do navegador antes de tentar (MKV/AVI não tocam em nenhum navegador comum).
+const MIME_BY_FORMAT = { mp4: 'video/mp4', mkv: 'video/x-matroska', avi: 'video/x-msvideo', mov: 'video/quicktime', webm: 'video/webm', '3gp': 'video/3gpp' };
+const directUnsupported = (video, format) => {
+  const mime = MIME_BY_FORMAT[format];
+  return !!mime && video.canPlayType(mime) === '';
+};
 
 /**
  * Player de vídeo com cadeia de tentativas (como o player do WebPlay antigo):
@@ -289,12 +295,15 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
     const tryPlay = () => { if (autoPlay) video.play().catch(() => {}); };
 
     // Se uma fonte "carregou" mas nunca começou a tocar, passa para a próxima.
+    // Com mais fontes na fila (ex.: MKV/AVI tentando HLS/MP4 em seguida), o tempo de espera é menor para trocar mais rápido.
     let stallTimer = null;
     const armStall = () => {
       clearTimeout(stallTimer);
+      const hasFallback = live || index < list.length - 1;
+      const wait = index < list.length - 1 ? 10000 : 25000;
       stallTimer = setTimeout(() => {
-        if (!cancelled && !failed && video.readyState < 2 && (live || index < list.length - 1)) next('network', 'timeout aguardando o início da reprodução');
-      }, 25000);
+        if (!cancelled && !failed && video.readyState < 2 && hasFallback) next('network', 'timeout aguardando o início da reprodução');
+      }, wait);
     };
 
     function start() {
@@ -360,6 +369,11 @@ export default function Player({ sources, live = false, startAt = 0, title, auto
           })
           .catch(() => next('unknown'));
       } else {
+        // MKV/AVI/etc. não tocam em nenhum navegador comum: se o pulo for óbvio, troca de fonte na hora em vez de esperar o erro.
+        if (directUnsupported(video, src.format) && index < list.length - 1) {
+          next('format', `${src.format} sem suporte neste navegador`);
+          return;
+        }
         video.src = src.url;
         tryPlay();
       }

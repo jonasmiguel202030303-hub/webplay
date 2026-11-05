@@ -458,10 +458,10 @@ function playbackFor(tenantId, row, { url, format, formats, stream, extra = {} }
   return { ...meta, url, relayUrl, relayOnly: false, alternatives };
 }
 
-/** Navegadores não tocam MKV/AVI etc.: oferece HLS e MP4 do mesmo título como alternativas (o player tenta em ordem). */
+/** Navegadores não tocam MKV/AVI etc.: oferece HLS, MP4 e TS do mesmo título como alternativas (o player tenta em ordem). */
 function vodFallbacks(adapter, type, id, format) {
-  if (['mp4', 'm3u8'].includes(format)) return [];
-  return ['m3u8', 'mp4'].map((f) => ({ format: f, url: adapter.buildPlayUrl({ type, id, extension: f }).url }));
+  if (['mp4', 'm3u8', 'ts'].includes(format)) return [];
+  return ['m3u8', 'mp4', 'ts'].map((f) => ({ format: f, url: adapter.buildPlayUrl({ type, id, extension: f }).url }));
 }
 
 /** Entrega a URL de reprodução direta ao espectador autenticado e autorizado (nunca em cache público). */
