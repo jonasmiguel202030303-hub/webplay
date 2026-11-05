@@ -12,6 +12,7 @@ import { audit } from './auditService.js';
 import { hashPassword, recordTermsAcceptance, verifyCredentials } from './authService.js';
 import { getTenantSettingsRow } from './tenantService.js';
 import { checkLine, listServerRows, toAppError } from './sourceService.js';
+import { passwordResetEmailTemplate } from '../utils/emailTemplates.js';
 
 // ---------- Visões ----------
 
@@ -203,7 +204,8 @@ export async function forgotViewerPassword(req, tenant, email) {
   if (!viewer) return {};
   const token = await createOneTimeToken({ viewerId: viewer.id, purpose: 'reset', ttlMs: HOUR_MS });
   const link = `${config.appUrl}/${tenant.slug}/redefinir-senha?token=${token}`;
-  await sendMail({ to: viewer.email, subject: 'Redefinição de senha', text: `Recebemos um pedido para redefinir sua senha.\n\nAcesse (válido por 1 hora, uso único):\n${link}\n\nSe não foi você, ignore este e-mail.` });
+  const reset = passwordResetEmailTemplate({ name: viewer.name, link, expiresInText: '1 hora' });
+  await sendMail({ to: viewer.email, subject: reset.subject, text: reset.text, html: reset.html });
   await audit(req, { action: 'viewer.forgot_password', entityType: 'viewer', entityId: viewer.id, tenantId: tenant.id });
   return config.isProd ? {} : { devResetUrl: link };
 }

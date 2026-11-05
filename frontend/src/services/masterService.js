@@ -20,6 +20,10 @@ export const masterService = {
   setMercadopagoMode: (mode) => api.put('/master/mercadopago/mode', { mode }),
   testMercadopago: (mode) => api.post('/master/mercadopago/test', { mode }),
 
+  email: () => api.get('/master/email'),
+  saveEmail: (data) => api.put('/master/email', data),
+  testEmail: (to) => api.post('/master/email/test', { to }),
+
   payments: (query) => api.get('/master/payments', { query }),
   paymentEvents: (id) => api.get(`/master/payments/${id}/events`),
   syncPayment: (id) => api.post(`/master/payments/${id}/sync`),

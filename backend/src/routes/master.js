@@ -8,12 +8,13 @@ import { sensitiveLimiter } from '../middleware/rateLimit.js';
 import { noStore } from '../middleware/security.js';
 import { authenticateStaff, requireRole } from '../middleware/auth.js';
 import {
-  masterSettingsSchema, termsPublishSchema, mpSettingsSchema, mpModeSchema, grantDaysSchema, suspendSchema, adminCreateSchema,
-  supportStatusSchema, viewerStatusSchema,
+  masterSettingsSchema, termsPublishSchema, mpSettingsSchema, mpModeSchema, emailSettingsSchema, emailTestSchema,
+  grantDaysSchema, suspendSchema, adminCreateSchema, supportStatusSchema, viewerStatusSchema,
 } from '../validators/schemas.js';
 import * as master from '../services/masterService.js';
 import * as billing from '../services/billingService.js';
 import * as subscriptions from '../services/subscriptionService.js';
+import * as emailSettings from '../services/emailSettingsService.js';
 import { metricsSnapshot } from '../middleware/metrics.js';
 
 const router = Router();
@@ -89,6 +90,19 @@ router.put('/mercadopago/mode', masterOnly, validate(mpModeSchema), asyncHandler
 
 router.post('/mercadopago/test', masterOnly, sensitiveLimiter(), validate(mpModeSchema), asyncHandler(async (req, res) => {
   res.json(await billing.testMpConnection(req, req.valid.body.mode));
+}));
+
+// ----- E-mail (SMTP) (somente master) -----
+router.get('/email', masterOnly, asyncHandler(async (_req, res) => {
+  res.json(await emailSettings.getEmailSettingsView());
+}));
+
+router.put('/email', masterOnly, validate(emailSettingsSchema), asyncHandler(async (req, res) => {
+  res.json(await emailSettings.saveEmailSettings(req, req.valid.body));
+}));
+
+router.post('/email/test', masterOnly, sensitiveLimiter(), validate(emailTestSchema), asyncHandler(async (req, res) => {
+  res.json(await emailSettings.testEmailConnection(req, req.valid.body.to));
 }));
 
 // ----- Pagamentos e webhooks -----

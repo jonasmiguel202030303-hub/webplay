@@ -34,6 +34,7 @@ const TenantsPage = lazy(() => import('./pages/master/Tenants.jsx'));
 const TenantDetailPage = lazy(() => import('./pages/master/TenantDetail.jsx'));
 const MasterSettingsPage = lazy(() => import('./pages/master/Settings.jsx'));
 const MercadoPagoPage = lazy(() => import('./pages/master/MercadoPago.jsx'));
+const EmailSettingsPage = lazy(() => import('./pages/master/Email.jsx'));
 const MasterPaymentsPage = lazy(() => import('./pages/master/Payments.jsx'));
 const MasterTermsPage = lazy(() => import('./pages/master/Terms.jsx'));
 const MasterSupportPage = lazy(() => import('./pages/master/Support.jsx'));
@@ -98,6 +99,7 @@ export default function App() {
                 <Route path="assinantes/:id" element={<TenantDetailPage />} />
                 <Route path="configuracoes" element={<RequireMaster><MasterSettingsPage /></RequireMaster>} />
                 <Route path="mercado-pago" element={<RequireMaster><MercadoPagoPage /></RequireMaster>} />
+                <Route path="email" element={<RequireMaster><EmailSettingsPage /></RequireMaster>} />
                 <Route path="pagamentos" element={<MasterPaymentsPage />} />
                 <Route path="termos" element={<MasterTermsPage />} />
                 <Route path="suporte" element={<MasterSupportPage />} />

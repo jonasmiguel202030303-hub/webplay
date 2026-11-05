@@ -4,6 +4,9 @@ import { getSettings } from './settingsService.js';
 import { audit } from './auditService.js';
 import { badRequest, conflict, notFound } from '../utils/errors.js';
 import { DAY_MS, HOUR_MS, toIso } from '../utils/time.js';
+import { sendMail } from './mailService.js';
+import { subscriptionExpiringEmailTemplate } from '../utils/emailTemplates.js';
+import { logger } from '../config/logger.js';
 
 /**
  * Calcula o estado efetivo da assinatura a partir dos relógios do SERVIDOR.
@@ -167,19 +170,22 @@ const PLAN_THRESHOLDS = [
   { key: '30d', ms: 30 * DAY_MS, text: '30 dias' },
 ];
 
+/** Retorna `true` quando o aviso foi criado agora (primeira vez); `false` quando já existia (dedupe). */
 async function notify(userId, tenantId, kind, dedupeKey, title, body) {
   try {
     await query('INSERT INTO notifications (user_id, tenant_id, kind, dedupe_key, title, body) VALUES (?, ?, ?, ?, ?, ?)', [
       userId, tenantId, kind, dedupeKey, title, body,
     ]);
+    return true;
   } catch (err) {
     if (!isDuplicateError(err)) throw err;
+    return false;
   }
 }
 
-/** Gera avisos de vencimento (24h/6h/1h do teste; 30d/7d/1d do plano). Idempotente. */
+/** Gera avisos de vencimento (24h/6h/1h do teste; 30d/7d/1d do plano). Idempotente; envia e-mail só na 1ª vez. */
 export async function syncExpiryNotifications(row, now = new Date()) {
-  const { tenant_id: tenantId, owner_user_id: userId } = row;
+  const { tenant_id: tenantId, owner_user_id: userId, owner_email: email, owner_name: name } = row;
   if (row.status === 'trial' && row.trial_ends_at) {
     const left = new Date(row.trial_ends_at) - now;
     if (left <= 0) {
@@ -196,14 +202,23 @@ export async function syncExpiryNotifications(row, now = new Date()) {
       await notify(userId, tenantId, 'plan_expired', `plan:expired:${tag}`, 'Sua assinatura venceu', 'Os recursos do player foram bloqueados. Renove para reativar.');
     } else {
       const hit = PLAN_THRESHOLDS.find((t) => left <= t.ms);
-      if (hit) await notify(userId, tenantId, 'plan_expiring', `plan:${hit.key}:${tag}`, 'Sua assinatura está perto de vencer', `Restam ${hit.text} de assinatura. Renove com antecedência: os dias restantes são mantidos.`);
+      if (hit) {
+        const created = await notify(userId, tenantId, 'plan_expiring', `plan:${hit.key}:${tag}`, 'Sua assinatura está perto de vencer', `Restam ${hit.text} de assinatura. Renove com antecedência: os dias restantes são mantidos.`);
+        if (created && email) {
+          const tpl = subscriptionExpiringEmailTemplate({
+            name, daysLeftText: hit.text, endsAtFormatted: end.toLocaleDateString('pt-BR', { timeZone: 'UTC' }), renewUrl: `${config.appUrl}/painel/assinatura`,
+          });
+          sendMail({ to: email, subject: tpl.subject, text: tpl.text, html: tpl.html }).catch((err) => logger.error('Falha ao enviar e-mail de vencimento próximo', { error: err }));
+        }
+      }
     }
   }
 }
 
 export async function runExpiryJob(now = new Date()) {
   const rows = await query(
-    `SELECT s.*, t.owner_user_id FROM subscriptions s JOIN tenants t ON t.id = s.tenant_id
+    `SELECT s.*, t.owner_user_id, u.email AS owner_email, u.name AS owner_name
+     FROM subscriptions s JOIN tenants t ON t.id = s.tenant_id JOIN users u ON u.id = t.owner_user_id
      WHERE t.deleted_at IS NULL AND (
        (s.status = 'trial' AND s.trial_ends_at <= ? AND s.trial_ends_at >= ?) OR
        (s.status = 'active' AND s.current_period_end <= ? AND s.current_period_end >= ?))`,

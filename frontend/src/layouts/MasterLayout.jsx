@@ -1,4 +1,4 @@
-import { Activity, CreditCard, FileText, KeyRound, LayoutDashboard, LifeBuoy, ScrollText, Settings, ShieldCheck, Users, Webhook } from 'lucide-react';
+import { Activity, CreditCard, FileText, KeyRound, LayoutDashboard, LifeBuoy, Mail, ScrollText, Settings, ShieldCheck, Users, Webhook } from 'lucide-react';
 import StaffShell from './StaffShell.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 
@@ -7,6 +7,7 @@ const ITEMS = [
   { to: '/master/assinantes', label: 'Assinantes', icon: Users },
   { to: '/master/configuracoes', label: 'Configurações comerciais', icon: Settings, master: true },
   { to: '/master/mercado-pago', label: 'Mercado Pago', icon: CreditCard, master: true },
+  { to: '/master/email', label: 'E-mail', icon: Mail, master: true },
   { to: '/master/pagamentos', label: 'Pagamentos e webhooks', icon: Webhook },
   { to: '/master/termos', label: 'Termos e privacidade', icon: FileText },
   { to: '/master/suporte', label: 'Suporte e LGPD', icon: LifeBuoy },

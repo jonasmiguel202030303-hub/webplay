@@ -10,6 +10,8 @@ import { sendMail } from './mailService.js';
 import { audit } from './auditService.js';
 import { getCurrentTerms } from './settingsService.js';
 import { startTrial } from './subscriptionService.js';
+import { welcomeEmailTemplate, passwordResetEmailTemplate } from '../utils/emailTemplates.js';
+import { logger } from '../config/logger.js';
 
 const MAX_FAILED = 5;
 const LOCK_MINUTES = 15;
@@ -65,6 +67,8 @@ export async function register(req, data) {
   }
 
   await audit(req, { action: 'auth.register', entityType: 'user', entityId: userId, actor: { userId, role: 'tenant_owner' }, metadata: { slug: data.slug } });
+  const welcome = welcomeEmailTemplate({ name: data.name, email: data.email, brandName: data.brandName });
+  sendMail({ to: data.email, subject: welcome.subject, text: welcome.text, html: welcome.html }).catch((err) => logger.error('Falha ao enviar e-mail de boas-vindas', { error: err }));
   return { userId };
 }
 
@@ -145,11 +149,8 @@ export async function forgotPassword(req, email) {
   if (!user) return {};
   const token = await createOneTimeToken({ userId: user.id, purpose: 'reset', ttlMs: HOUR_MS });
   const link = `${config.appUrl}/redefinir-senha?token=${token}`;
-  await sendMail({
-    to: user.email,
-    subject: 'Redefinição de senha — WebPlay Brasil',
-    text: `Recebemos um pedido para redefinir sua senha.\n\nAcesse (válido por 1 hora, uso único):\n${link}\n\nSe não foi você, ignore este e-mail.`,
-  });
+  const reset = passwordResetEmailTemplate({ name: user.name, link, expiresInText: '1 hora' });
+  await sendMail({ to: user.email, subject: reset.subject, text: reset.text, html: reset.html });
   await audit(req, { action: 'auth.forgot_password', entityType: 'user', entityId: user.id, actor: { userId: user.id, role: user.role } });
   return config.isProd ? {} : { devResetUrl: link };
 }

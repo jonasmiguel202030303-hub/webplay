@@ -145,7 +145,7 @@ export async function getPublicTenant(slug) {
 }
 
 export async function getOverview(tenant) {
-  const sub = await queryOne('SELECT s.*, t.owner_user_id FROM subscriptions s JOIN tenants t ON t.id = s.tenant_id WHERE s.tenant_id = ?', [tenant.id]);
+  const sub = await queryOne('SELECT s.*, t.owner_user_id, u.email AS owner_email, u.name AS owner_name FROM subscriptions s JOIN tenants t ON t.id = s.tenant_id JOIN users u ON u.id = t.owner_user_id WHERE s.tenant_id = ?', [tenant.id]);
   if (sub) await syncExpiryNotifications(sub);
   const [brand, subscription, profiles, viewers, servers, activity, notifications] = await Promise.all([
     getBrand(tenant.id),

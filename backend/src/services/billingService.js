@@ -8,6 +8,10 @@ import { logger } from '../config/logger.js';
 import { getSettings, setSettings } from './settingsService.js';
 import { getSubscriptionView } from './subscriptionService.js';
 import { audit } from './auditService.js';
+import { sendMail } from './mailService.js';
+import { paymentConfirmedEmailTemplate } from '../utils/emailTemplates.js';
+
+const formatCents = (cents) => (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const STATUS_MAP = {
   approved: 'approved',
@@ -269,7 +273,7 @@ export async function syncFromGateway(mode, mpPaymentId, { source = 'webhook' } 
   const status = STATUS_MAP[remote.status] ?? 'pending';
   const remoteCents = Math.round(Number(remote.transaction_amount) * 100);
 
-  return withTransaction(async (tx) => {
+  const result = await withTransaction(async (tx) => {
     const payment = await tx.queryOne('SELECT * FROM payments WHERE id = ? FOR UPDATE', [local.id]);
     if (remote.currency_id && remote.currency_id !== payment.currency) {
       await logPaymentEvent(tx, payment.id, 'currency_mismatch', { remote: remote.currency_id });
@@ -319,7 +323,7 @@ export async function syncFromGateway(mode, mpPaymentId, { source = 'webhook' } 
     ]);
     await tx.query('UPDATE payments SET applied_at = ?, period_from = ?, period_to = ? WHERE id = ?', [now, base, newEnd, payment.id]);
     await logPaymentEvent(tx, payment.id, 'subscription_extended', { from: toIso(base), to: toIso(newEnd), early: prolongs });
-    const owner = await tx.queryOne('SELECT owner_user_id FROM tenants WHERE id = ?', [payment.tenant_id]);
+    const owner = await tx.queryOne('SELECT u.id AS owner_user_id, u.email, u.name FROM tenants t JOIN users u ON u.id = t.owner_user_id WHERE t.id = ?', [payment.tenant_id]);
     try {
       await tx.query('INSERT INTO notifications (user_id, tenant_id, kind, dedupe_key, title, body) VALUES (?, ?, ?, ?, ?, ?)', [
         owner.owner_user_id, payment.tenant_id, 'payment_approved', `payment:${payment.id}`, 'Pagamento confirmado',
@@ -328,8 +332,22 @@ export async function syncFromGateway(mode, mpPaymentId, { source = 'webhook' } 
     } catch (err) {
       if (!isDuplicateError(err)) throw err;
     }
-    return { outcome: 'applied', paymentId: payment.id, periodTo: newEnd };
+    return {
+      outcome: 'applied', paymentId: payment.id, periodTo: newEnd,
+      ownerEmail: owner.email, ownerName: owner.name, amountCents: payment.amount_cents,
+    };
   });
+
+  if (result.outcome === 'applied' && result.ownerEmail) {
+    const tpl = paymentConfirmedEmailTemplate({
+      name: result.ownerName,
+      amountFormatted: formatCents(result.amountCents),
+      periodToFormatted: result.periodTo.toLocaleDateString('pt-BR', { timeZone: 'UTC' }),
+      panelUrl: `${config.appUrl}/painel`,
+    });
+    sendMail({ to: result.ownerEmail, subject: tpl.subject, text: tpl.text, html: tpl.html }).catch((err) => logger.error('Falha ao enviar e-mail de pagamento confirmado', { error: err }));
+  }
+  return result;
 }
 
 /** Consulta sob demanda do assinante (útil quando o webhook não alcança o ambiente, como em localhost). */

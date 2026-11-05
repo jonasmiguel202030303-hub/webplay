@@ -203,6 +203,17 @@ export const mpSettingsSchema = z.object({
 });
 export const mpModeSchema = z.object({ mode: z.enum(['test', 'production']) });
 
+export const emailSettingsSchema = z.object({
+  smtpHost: z.union([z.string().trim().max(255), z.literal('')]).optional(),
+  smtpPort: z.number().int().min(1).max(65535).optional(),
+  smtpSecure: z.boolean().optional(),
+  smtpUser: z.union([z.string().trim().max(255), z.literal('')]).optional(),
+  smtpPass: z.string().trim().min(4).max(300).optional(),
+  fromName: z.union([plainText(0, 120, 'Nome do remetente'), z.literal('')]).optional(),
+  fromEmail: z.union([emailField, z.literal('')]).optional(),
+});
+export const emailTestSchema = z.object({ to: z.union([emailField, z.literal('')]).optional() });
+
 export const grantDaysSchema = z.object({
   days: z.number().int().min(1).max(730),
   reason: plainText(10, 500, 'Justificativa'),
