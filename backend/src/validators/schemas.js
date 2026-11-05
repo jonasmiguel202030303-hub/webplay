@@ -219,5 +219,12 @@ export const grantDaysSchema = z.object({
   reason: plainText(10, 500, 'Justificativa'),
 });
 export const suspendSchema = z.object({ reason: plainText(5, 500, 'Motivo') });
+export const tenantEditSchema = z.object({
+  displayName: plainText(2, 80, 'Nome da plataforma'),
+  slug: slugField,
+  ownerName: plainText(2, 120, 'Nome do responsável'),
+  ownerEmail: emailField,
+});
+export const tenantDeleteSchema = z.object({ reason: plainText(5, 500, 'Motivo') });
 export const adminCreateSchema = z.object({ name: plainText(2, 120, 'Nome'), email: emailField, password: passwordField });
 export const supportStatusSchema = z.object({ status: z.enum(['open', 'answered', 'closed']) });

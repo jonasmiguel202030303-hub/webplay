@@ -6,6 +6,8 @@ export const masterService = {
 
   tenants: (query) => api.get('/master/tenants', { query }),
   tenant: (id) => api.get(`/master/tenants/${id}`),
+  updateTenant: (id, data) => api.put(`/master/tenants/${id}`, data),
+  deleteTenant: (id, reason) => api.del(`/master/tenants/${id}`, { body: { reason } }),
   suspend: (id, reason) => api.post(`/master/tenants/${id}/suspend`, { reason }),
   reactivate: (id) => api.post(`/master/tenants/${id}/reactivate`),
   grantDays: (id, days, reason) => api.post(`/master/tenants/${id}/grant-days`, { days, reason }),

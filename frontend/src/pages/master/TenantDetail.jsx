@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, CalendarPlus, ExternalLink, Pause, Play } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, CalendarPlus, ExternalLink, Pause, Pencil, Play, Trash2 } from 'lucide-react';
 import { PageHeader, Card, StatCard } from '../../components/ui/Card.jsx';
 import { AsyncView, Alert } from '../../components/ui/Feedback.jsx';
 import { Field } from '../../components/ui/Field.jsx';
@@ -47,8 +47,50 @@ function ReasonDialog({ open, title, label, minHint, confirmLabel, extra, onClos
   );
 }
 
+function EditDialog({ open, tenant, onClose, onSubmit }) {
+  const [form, setForm] = useState({ displayName: '', slug: '', ownerName: '', ownerEmail: '' });
+  const [errors, setErrors] = useState({});
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (open && tenant) {
+      setForm({ displayName: tenant.brand.displayName, slug: tenant.slug, ownerName: tenant.owner.name, ownerEmail: tenant.owner.email });
+      setErrors({});
+    }
+  }, [open, tenant]);
+
+  const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    setErrors({});
+    try {
+      await onSubmit(form);
+    } catch (err) {
+      setErrors({ ...fieldErrors(err), _: err.message });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal open={open} onClose={onClose} title="Editar assinante" footer={<><Button variant="ghost" onClick={onClose}>Cancelar</Button><Button type="submit" form="edit-tenant-form" loading={busy}>Salvar</Button></>}>
+      <form id="edit-tenant-form" onSubmit={submit} className="space-y-4" noValidate>
+        <Field label="Nome da plataforma" required value={form.displayName} onChange={set('displayName')} error={errors.displayName} />
+        <Field label="Endereço (slug)" required value={form.slug} onChange={set('slug')} error={errors.slug} hint="Usado na URL da página do assinante (ex.: webplaybrasil.online/seu-slug)." />
+        <Field label="Nome do responsável" required value={form.ownerName} onChange={set('ownerName')} error={errors.ownerName} />
+        <Field type="email" label="E-mail do responsável" required value={form.ownerEmail} onChange={set('ownerEmail')} error={errors.ownerEmail} />
+        {errors._ && !errors.displayName && !errors.slug && !errors.ownerName && !errors.ownerEmail && <Alert tone="error">{errors._}</Alert>}
+        <p className="hint">A ação fica registrada na auditoria com o seu usuário.</p>
+      </form>
+    </Modal>
+  );
+}
+
 function Detail({ initial }) {
   const toast = useToast();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [t, setT] = useState(initial);
   const [dialog, setDialog] = useState(null);
@@ -74,6 +116,19 @@ function Detail({ initial }) {
     }
   };
 
+  const saveEdit = async (form) => {
+    const updated = await masterService.updateTenant(t.id, form);
+    setT(updated);
+    setDialog(null);
+    toast.success('Assinante atualizado.');
+  };
+
+  const confirmDelete = async ({ reason }) => {
+    await masterService.deleteTenant(t.id, reason);
+    toast.success('Assinante excluído.');
+    navigate('/master/assinantes');
+  };
+
   return (
     <>
       <Link to="/master/assinantes" className="mb-3 inline-flex items-center gap-1 text-sm text-fg/60 hover:text-fg"><ArrowLeft className="h-4 w-4" aria-hidden /> Assinantes</Link>
@@ -83,8 +138,10 @@ function Detail({ initial }) {
         actions={
           <>
             <a className="btn btn-secondary" href={`/${t.slug}`} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" aria-hidden /> Abrir página</a>
+            {isMaster && <Button variant="secondary" icon={Pencil} onClick={() => setDialog('edit')}>Editar</Button>}
             {isMaster && <Button variant="secondary" icon={CalendarPlus} onClick={() => setDialog('grant')}>Conceder dias</Button>}
             {sub.status === 'suspended' ? <Button icon={Play} onClick={() => setReactivating(true)}>Reativar</Button> : <Button variant="danger" icon={Pause} onClick={() => setDialog('suspend')}>Suspender</Button>}
+            {isMaster && <Button variant="danger" icon={Trash2} onClick={() => setDialog('delete')}>Excluir</Button>}
           </>
         }
       />
@@ -137,6 +194,8 @@ function Detail({ initial }) {
 
       <ReasonDialog open={dialog === 'suspend'} title="Suspender assinante" label="Motivo da suspensão" minHint="Mínimo de 5 caracteres." confirmLabel="Suspender" onClose={() => setDialog(null)} onSubmit={({ reason }) => act(() => masterService.suspend(t.id, reason), 'Assinante suspenso.')} />
       <ReasonDialog open={dialog === 'grant'} title="Conceder dias de acesso" extra="days" label="Justificativa" minHint="Mínimo de 10 caracteres." confirmLabel="Conceder" onClose={() => setDialog(null)} onSubmit={({ reason, days }) => act(() => masterService.grantDays(t.id, days, reason), `${days} dia(s) concedido(s).`)} />
+      <EditDialog open={dialog === 'edit'} tenant={t} onClose={() => setDialog(null)} onSubmit={saveEdit} />
+      <ReasonDialog open={dialog === 'delete'} title="Excluir assinante" label="Motivo da exclusão" minHint="Mínimo de 5 caracteres. Ação irreversível: os dados do responsável serão anonimizados." confirmLabel="Excluir definitivamente" onClose={() => setDialog(null)} onSubmit={confirmDelete} />
       <ConfirmDialog open={reactivating} title="Reativar assinante?" message="O acesso volta conforme as datas de teste/plano. Se estiverem vencidas, a página continuará indisponível." confirmLabel="Reativar" onConfirm={reactivate} onCancel={() => setReactivating(false)} />
     </>
   );

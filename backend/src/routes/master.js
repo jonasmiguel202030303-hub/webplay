@@ -9,7 +9,7 @@ import { noStore } from '../middleware/security.js';
 import { authenticateStaff, requireRole } from '../middleware/auth.js';
 import {
   masterSettingsSchema, termsPublishSchema, mpSettingsSchema, mpModeSchema, emailSettingsSchema, emailTestSchema,
-  grantDaysSchema, suspendSchema, adminCreateSchema, supportStatusSchema, viewerStatusSchema,
+  grantDaysSchema, suspendSchema, tenantEditSchema, tenantDeleteSchema, adminCreateSchema, supportStatusSchema, viewerStatusSchema,
 } from '../validators/schemas.js';
 import * as master from '../services/masterService.js';
 import * as billing from '../services/billingService.js';
@@ -40,6 +40,15 @@ router.get('/tenants', asyncHandler(async (req, res) => {
 
 router.get('/tenants/:id', asyncHandler(async (req, res) => {
   res.json(await master.getTenantDetail(idParam(req)));
+}));
+
+router.put('/tenants/:id', masterOnly, validate(tenantEditSchema), asyncHandler(async (req, res) => {
+  res.json(await master.updateTenantByMaster(req, idParam(req), req.valid.body));
+}));
+
+router.delete('/tenants/:id', masterOnly, sensitiveLimiter(), validate(tenantDeleteSchema), asyncHandler(async (req, res) => {
+  await master.deleteTenant(req, idParam(req), req.valid.body.reason);
+  res.json({ ok: true });
 }));
 
 router.post('/tenants/:id/suspend', validate(suspendSchema), asyncHandler(async (req, res) => {

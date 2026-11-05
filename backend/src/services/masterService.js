@@ -4,10 +4,11 @@ import { badRequest, conflict, notFound } from '../utils/errors.js';
 import { normalizeEmail } from '../utils/email.js';
 import { getSettings, setSettings } from './settingsService.js';
 import { getSubscriptionView } from './subscriptionService.js';
-import { getBrand } from './tenantService.js';
+import { getBrand, invalidateSlugCache } from './tenantService.js';
 import { hashPassword } from './authService.js';
 import { audit } from './auditService.js';
 import { paymentView } from './billingService.js';
+import { randomToken } from '../utils/crypto.js';
 
 const like = (s) => `%${String(s).replace(/[%_\\]/g, '\\$&')}%`;
 
@@ -116,6 +117,59 @@ export async function getTenantDetail(tenantId) {
     payments: payments.map((p) => ({ ...paymentView(p), mpPaymentId: p.mp_payment_id })),
     audit: audits.map((a) => ({ action: a.action, result: a.result, reason: a.reason, actorRole: a.actor_role, at: a.created_at })),
   };
+}
+
+/** Edita dados cadastrais do assinante (somente master): nome/endereço da marca e nome/e-mail do responsável. */
+export async function updateTenantByMaster(req, tenantId, data) {
+  const tenant = await queryOne('SELECT id, slug, owner_user_id FROM tenants WHERE id = ? AND deleted_at IS NULL', [tenantId]);
+  if (!tenant) throw notFound('Assinante não encontrado.');
+
+  if (data.slug !== tenant.slug) {
+    try {
+      await query('UPDATE tenants SET slug = ? WHERE id = ?', [data.slug, tenantId]);
+    } catch (err) {
+      if (isDuplicateError(err)) throw conflict('Este endereço já está em uso. Escolha outro.', 'SLUG_TAKEN');
+      throw err;
+    }
+    invalidateSlugCache(tenant.slug);
+    invalidateSlugCache(data.slug);
+  }
+  await query('UPDATE tenant_branding SET display_name = ? WHERE tenant_id = ?', [data.displayName, tenantId]);
+  try {
+    await query('UPDATE users SET name = ?, email = ?, email_normalized = ? WHERE id = ?', [
+      data.ownerName, data.ownerEmail, normalizeEmail(data.ownerEmail), tenant.owner_user_id,
+    ]);
+  } catch (err) {
+    if (isDuplicateError(err)) throw conflict('Este e-mail já está em uso por outra conta.', 'EMAIL_TAKEN');
+    throw err;
+  }
+  await audit(req, {
+    action: 'tenant.edit', entityType: 'tenant', entityId: tenantId, tenantId,
+    metadata: { slug: data.slug, displayName: data.displayName, ownerEmail: data.ownerEmail },
+  });
+  return getTenantDetail(tenantId);
+}
+
+/**
+ * Exclui o assinante (somente master): marca o tenant como removido e anonimiza os dados do responsável,
+ * encerrando a sessão dele imediatamente. Pagamentos e auditoria são preservados para fins fiscais/legais.
+ * Ação irreversível — equivalente a uma nova marca/conta do zero caso o cliente retorne.
+ */
+export async function deleteTenant(req, tenantId, reason) {
+  const tenant = await queryOne('SELECT id, slug, owner_user_id FROM tenants WHERE id = ? AND deleted_at IS NULL', [tenantId]);
+  if (!tenant) throw notFound('Assinante não encontrado.');
+  const placeholder = `removido-tenant-${tenantId}@removed.invalid`;
+  const randomHash = await hashPassword(randomToken(24));
+  await withTransaction(async (tx) => {
+    await tx.query('UPDATE tenants SET deleted_at = UTC_TIMESTAMP(3) WHERE id = ?', [tenantId]);
+    await tx.query("UPDATE subscriptions SET status = 'canceled', canceled_at = UTC_TIMESTAMP(3), suspended_reason = ? WHERE tenant_id = ?", [reason, tenantId]);
+    await tx.query(
+      "UPDATE users SET name = 'Removido', email = ?, email_normalized = ?, password_hash = ?, status = 'suspended', token_version = token_version + 1, deleted_at = UTC_TIMESTAMP(3) WHERE id = ?",
+      [placeholder, placeholder, randomHash, tenant.owner_user_id],
+    );
+  });
+  invalidateSlugCache(tenant.slug);
+  await audit(req, { action: 'tenant.delete', entityType: 'tenant', entityId: tenantId, tenantId, reason });
 }
 
 // ---------- Configurações comerciais ----------
